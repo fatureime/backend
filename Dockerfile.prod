@@ -33,10 +33,6 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-di
 # Copy application files
 COPY . .
 
-# Run post-install scripts (cache:clear and assets:install) in production mode
-RUN APP_ENV=prod APP_SECRET=dummy-secret-for-build php bin/console cache:clear --no-warmup --env=prod --no-debug && \
-    APP_ENV=prod php bin/console assets:install public --env=prod --no-debug
-
 # Create necessary directories and set permissions
 RUN mkdir -p /var/www/html/var/cache/prod \
     && mkdir -p /var/www/html/var/log \
