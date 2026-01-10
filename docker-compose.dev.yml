@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:18.1
+    container_name: invoicing_postgres
+    env_file:
+      - ./.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    networks:
+      - invoicing_network
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U \"$$POSTGRES_USER\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: invoicing_backend
+    volumes:
+      - .:/var/www/html
+      - backend_vendor:/var/www/html/vendor
+    networks:
+      - invoicing_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?serverVersion=18.1&charset=utf8}
+      - APP_ENV=${APP_ENV}
+      - APP_SECRET=${APP_SECRET}
+      - XDEBUG_MODE=debug
+      - XDEBUG_CONFIG=client_host=host.docker.internal client_port=9003
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  backend_nginx:
+    image: nginx:alpine
+    container_name: invoicing_backend_nginx
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./public:/var/www/html/public:ro
+    networks:
+      - invoicing_network
+    depends_on:
+      - backend
+
+volumes:
+  backend_vendor:
+  postgres_data:
