@@ -20,8 +20,6 @@ services:
       context: .
       dockerfile: Dockerfile.prod
     container_name: invoicing_backend_prod
-    volumes:
-      - .:/var/www/html
     networks:
       - invoicing_network_prod
     depends_on:

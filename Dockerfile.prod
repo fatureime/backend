@@ -27,17 +27,22 @@ COPY php.ini /usr/local/etc/php/conf.d/custom.ini
 # Copy composer files first for better layer caching
 COPY composer.json composer.lock symfony.lock ./
 
-# Install production dependencies only
-RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist
+# Install production dependencies only (skip scripts - they need full app structure)
+RUN composer install --no-dev --optimize-autoloader --no-interaction --prefer-dist --no-scripts
 
 # Copy application files
 COPY . .
 
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# Run post-install scripts (cache:clear and assets:install) in production mode
+RUN APP_ENV=prod APP_SECRET=dummy-secret-for-build php bin/console cache:clear --no-warmup --env=prod --no-debug && \
+    APP_ENV=prod php bin/console assets:install public --env=prod --no-debug
+
+# Create necessary directories and set permissions
+RUN mkdir -p /var/www/html/var/cache/prod \
+    && mkdir -p /var/www/html/var/log \
+    && chown -R www-data:www-data /var/www/html/var \
+    && chmod -R 775 /var/www/html/var
 
 EXPOSE 9000
 
-ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["php-fpm"]
