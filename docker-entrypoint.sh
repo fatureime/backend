@@ -11,10 +11,5 @@ mkdir -p /var/www/html/var/log
 chown -R www-data:www-data /var/www/html/var
 chmod -R 777 /var/www/html/var
 
-# Install/update Composer dependencies
-if [ -f /var/www/html/composer.json ]; then
-    composer install --no-dev --optimize-autoloader --no-interaction
-fi
-
 # Execute the original command
 exec "$@"
