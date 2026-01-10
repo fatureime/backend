@@ -2,7 +2,9 @@
 
 namespace App\Controller;
 
+use App\Entity\Tenant;
 use App\Entity\User;
+use App\Repository\TenantRepository;
 use App\Repository\UserRepository;
 use App\Service\EmailService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -21,6 +23,7 @@ class AuthController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private UserRepository $userRepository,
+        private TenantRepository $tenantRepository,
         private UserPasswordHasherInterface $passwordHasher,
         private EmailService $emailService,
         private JWTTokenManagerInterface $jwtManager,
@@ -64,12 +67,34 @@ class AuthController extends AbstractController
             );
         }
 
+        // Handle tenant assignment
+        $tenant = null;
+        if (isset($data['tenant_id'])) {
+            // User provided tenant_id - assign to existing tenant
+            $tenant = $this->tenantRepository->find($data['tenant_id']);
+            if (!$tenant) {
+                return new JsonResponse(
+                    ['error' => 'Tenant not found'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+        } else {
+            // Create a new tenant automatically for the new user
+            $tenant = new Tenant();
+            $tenant->setName('Tenant for ' . $email);
+            $tenant->setHasPaid(false);
+            $tenant->setIsAdmin(false);
+            $this->entityManager->persist($tenant);
+        }
+
         // Create new user
         $user = new User();
         $user->setEmail($email);
         $user->setPassword($this->passwordHasher->hashPassword($user, $password));
         $user->setRoles(['ROLE_USER']);
         $user->setEmailVerified(false);
+        $user->setTenant($tenant);
+        $user->setIsActive(true); // New users are active by default
 
         // Generate verification token
         $verificationToken = bin2hex(random_bytes(32));
@@ -194,6 +219,14 @@ class AuthController extends AbstractController
             );
         }
 
+        // Check if user is active
+        if (!$user->isActive()) {
+            return new JsonResponse(
+                ['error' => 'Llogaria juaj është e çaktivizuar. Ju lutem kontaktoni administratorin.'],
+                Response::HTTP_FORBIDDEN
+            );
+        }
+
         // Generate JWT token
         // For remember me, we'll use a longer TTL (7 days = 604800 seconds)
         // Note: The actual TTL is set in lexik_jwt_authentication.yaml, but we can override it
@@ -206,13 +239,22 @@ class AuthController extends AbstractController
             $this->entityManager->flush();
         }
 
+        $tenant = $user->getTenant();
+        
         return new JsonResponse(
             [
                 'token' => $token,
                 'user' => [
                     'id' => $user->getId(),
                     'email' => $user->getEmail(),
-                    'roles' => $user->getRoles()
+                    'roles' => $user->getRoles(),
+                    'is_active' => $user->isActive(),
+                    'tenant' => $tenant ? [
+                        'id' => $tenant->getId(),
+                        'name' => $tenant->getName(),
+                        'has_paid' => $tenant->isHasPaid(),
+                        'is_admin' => $tenant->isAdmin(),
+                    ] : null,
                 ],
                 'remember_me_token' => $rememberMe ? $user->getRememberMeToken() : null
             ],
@@ -234,12 +276,21 @@ class AuthController extends AbstractController
             );
         }
 
+        $tenant = $user->getTenant();
+
         return new JsonResponse(
             [
                 'id' => $user->getId(),
                 'email' => $user->getEmail(),
                 'roles' => $user->getRoles(),
-                'email_verified' => $user->isEmailVerified()
+                'email_verified' => $user->isEmailVerified(),
+                'is_active' => $user->isActive(),
+                'tenant' => $tenant ? [
+                    'id' => $tenant->getId(),
+                    'name' => $tenant->getName(),
+                    'has_paid' => $tenant->isHasPaid(),
+                    'is_admin' => $tenant->isAdmin(),
+                ] : null,
             ],
             Response::HTTP_OK
         );

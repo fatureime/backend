@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Tenant;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -67,5 +68,52 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
             ->setParameter('token', $token)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * Find all users by tenant
+     *
+     * @return User[]
+     */
+    public function findByTenant(Tenant $tenant): array
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.tenant = :tenant')
+            ->setParameter('tenant', $tenant)
+            ->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find active users by tenant
+     *
+     * @return User[]
+     */
+    public function findActiveUsersByTenant(Tenant $tenant): array
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.tenant = :tenant')
+            ->andWhere('u.isActive = :isActive')
+            ->setParameter('tenant', $tenant)
+            ->setParameter('isActive', true)
+            ->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find all active users
+     *
+     * @return User[]
+     */
+    public function findActiveUsers(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->andWhere('u.isActive = :isActive')
+            ->setParameter('isActive', true)
+            ->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 }
