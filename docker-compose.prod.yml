@@ -30,6 +30,8 @@ services:
     environment:
       - APP_ENV=prod
       - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?serverVersion=18.1&charset=utf8}
+    volumes:
+      - ./config/jwt:/var/www/html/config/jwt:ro
     restart: unless-stopped
 
   backend_nginx:
