@@ -31,17 +31,12 @@ COPY xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 # Copy application files
 COPY . .
 
-# Create cache and logs directories with proper permissions
-RUN mkdir -p /var/www/html/var/cache/prod \
-    && mkdir -p /var/www/html/var/cache/dev \
-    && mkdir -p /var/www/html/var/cache/test \
-    && mkdir -p /var/www/html/var/log
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Set permissions
-RUN chown -R www-data:www-data /var/www/html \
-    && chmod -R 755 /var/www/html \
-    && chmod -R 777 /var/www/html/var
 
 EXPOSE 9000
 
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["php-fpm"]
