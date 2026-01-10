@@ -1,0 +1,51 @@
+services:
+  postgres:
+    image: postgres:18.1
+    container_name: invoicing_postgres_prod
+    env_file:
+      - ./.env
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql
+    networks:
+      - invoicing_network_prod
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U \"$$POSTGRES_USER\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: invoicing_backend_prod
+    volumes:
+      - .:/var/www/html
+    networks:
+      - invoicing_network_prod
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ./.env
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?serverVersion=18.1&charset=utf8}
+    restart: unless-stopped
+
+  backend_nginx:
+    image: nginx:alpine
+    container_name: invoicing_backend_nginx_prod
+    ports:
+      - "8000:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./public:/var/www/html/public:ro
+    networks:
+      - invoicing_network_prod
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data_prod:
