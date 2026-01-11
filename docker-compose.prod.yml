@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres:18.1
     container_name: invoicing_postgres_prod
+    ports:
+      - "127.0.0.1:5432:5432"  # Only accessible from localhost
     env_file:
       - ./.env
     volumes:
