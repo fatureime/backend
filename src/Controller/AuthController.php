@@ -118,13 +118,17 @@ class AuthController extends AbstractController
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        // If a new tenant was created, automatically create a business for it
+        // If a new tenant was created, automatically create a business for it and set as issuer
         if ($tenant->getId() && $tenant->getBusinesses()->isEmpty()) {
             $business = new Business();
             $business->setBusinessName($tenant->getName()); // Default to tenant name
             $business->setCreatedBy($user);
             $business->setTenant($tenant);
             $this->entityManager->persist($business);
+            $this->entityManager->flush();
+            
+            // Set this business as the issuer business for the tenant
+            $tenant->setIssuerBusiness($business);
             $this->entityManager->flush();
         }
 

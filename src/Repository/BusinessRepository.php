@@ -89,4 +89,36 @@ class BusinessRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Find issuer business for a tenant
+     */
+    public function findIssuerBusiness(Tenant $tenant): ?Business
+    {
+        return $tenant->getIssuerBusiness();
+    }
+
+    /**
+     * Find receiver businesses for a tenant (all businesses except issuer)
+     *
+     * @return Business[]
+     */
+    public function findReceiverBusinesses(Tenant $tenant): array
+    {
+        $issuerBusiness = $tenant->getIssuerBusiness();
+        
+        if (!$issuerBusiness) {
+            // If no issuer, return all businesses
+            return $this->findByTenant($tenant);
+        }
+
+        return $this->createQueryBuilder('b')
+            ->andWhere('b.tenant = :tenant')
+            ->andWhere('b.id != :issuerId')
+            ->setParameter('tenant', $tenant)
+            ->setParameter('issuerId', $issuerBusiness->getId())
+            ->orderBy('b.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

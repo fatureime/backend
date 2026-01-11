@@ -192,6 +192,12 @@ class BusinessController extends AbstractController
         $this->entityManager->persist($business);
         $this->entityManager->flush();
 
+        // If tenant has no issuer business, set this first business as issuer
+        if (!$tenant->getIssuerBusiness()) {
+            $tenant->setIssuerBusiness($business);
+            $this->entityManager->flush();
+        }
+
         return new JsonResponse(
             $this->serializeBusiness($business),
             Response::HTTP_CREATED
@@ -325,6 +331,15 @@ class BusinessController extends AbstractController
 
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
+
+        // Prevent deleting issuer business
+        $tenant = $business->getTenant();
+        if ($tenant && $tenant->getIssuerBusiness() && $tenant->getIssuerBusiness()->getId() === $business->getId()) {
+            return new JsonResponse(
+                ['error' => 'Cannot delete issuer business. This business is used for invoice creation.'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
 
         $this->entityManager->remove($business);
         $this->entityManager->flush();

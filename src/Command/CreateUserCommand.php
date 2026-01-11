@@ -69,7 +69,7 @@ class CreateUserCommand extends Command
         $this->entityManager->persist($user);
         $this->entityManager->flush();
 
-        // If a new tenant was created, automatically create a business for it
+        // If a new tenant was created, automatically create a business for it and set as issuer
         if ($isNewTenant && $tenant->getBusinesses()->isEmpty()) {
             $business = new Business();
             $business->setBusinessName($tenant->getName()); // Default to tenant name
@@ -77,7 +77,11 @@ class CreateUserCommand extends Command
             $business->setTenant($tenant);
             $this->entityManager->persist($business);
             $this->entityManager->flush();
-            $io->info('Created business for new tenant');
+            
+            // Set this business as the issuer business for the tenant
+            $tenant->setIssuerBusiness($business);
+            $this->entityManager->flush();
+            $io->info('Created business for new tenant and set as issuer business');
         }
 
         $io->success(sprintf('User created successfully! Email: %s', $email));

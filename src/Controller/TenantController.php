@@ -135,6 +135,14 @@ class TenantController extends AbstractController
             $tenant->setIsAdmin((bool) $data['is_admin']);
         }
 
+        // Prevent changing issuer_business_id (immutable after creation)
+        if (isset($data['issuer_business_id'])) {
+            return new JsonResponse(
+                ['error' => 'Issuer business cannot be changed after creation'],
+                Response::HTTP_BAD_REQUEST
+            );
+        }
+
         // Validate entity
         $errors = $this->validator->validate($tenant);
         if (count($errors) > 0) {
@@ -243,11 +251,19 @@ class TenantController extends AbstractController
             ];
         }
 
+        $issuerBusiness = $tenant->getIssuerBusiness();
+
         return [
             'id' => $tenant->getId(),
             'name' => $tenant->getName(),
             'has_paid' => $tenant->isHasPaid(),
             'is_admin' => $tenant->isAdmin(),
+            'issuer_business_id' => $issuerBusiness?->getId(),
+            'issuer_business' => $issuerBusiness ? [
+                'id' => $issuerBusiness->getId(),
+                'business_name' => $issuerBusiness->getBusinessName(),
+                'fiscal_number' => $issuerBusiness->getFiscalNumber(),
+            ] : null,
             'created_at' => $tenant->getCreatedAt()?->format('c'),
             'updated_at' => $tenant->getUpdatedAt()?->format('c'),
             'users' => $users,

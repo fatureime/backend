@@ -2,6 +2,7 @@
 
 namespace App\Repository;
 
+use App\Entity\Business;
 use App\Entity\Tenant;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -53,5 +54,17 @@ class TenantRepository extends ServiceEntityRepository
             ->orderBy('t.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Find tenant by issuer business
+     */
+    public function findOneByIssuerBusiness(Business $business): ?Tenant
+    {
+        return $this->createQueryBuilder('t')
+            ->andWhere('t.issuerBusiness = :business')
+            ->setParameter('business', $business)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 }

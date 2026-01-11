@@ -27,6 +27,10 @@ class Tenant
     #[ORM\Column(type: Types::BOOLEAN)]
     private bool $isAdmin = false;
 
+    #[ORM\OneToOne(targetEntity: Business::class)]
+    #[ORM\JoinColumn(name: 'issuer_business_id', referencedColumnName: 'id', unique: true, nullable: false)]
+    private ?Business $issuerBusiness = null;
+
     #[ORM\OneToMany(targetEntity: Business::class, mappedBy: 'tenant', cascade: ['persist', 'remove'])]
     private $businesses;
 
@@ -92,6 +96,18 @@ class Tenant
     public function isAdminTenant(): bool
     {
         return $this->isAdmin === true;
+    }
+
+    public function getIssuerBusiness(): ?Business
+    {
+        return $this->issuerBusiness;
+    }
+
+    public function setIssuerBusiness(?Business $issuerBusiness): static
+    {
+        $this->issuerBusiness = $issuerBusiness;
+
+        return $this;
     }
 
     /**
