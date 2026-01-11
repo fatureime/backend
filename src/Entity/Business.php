@@ -72,6 +72,12 @@ class Business
     #[ORM\OneToMany(targetEntity: Article::class, mappedBy: 'business', cascade: ['persist', 'remove'])]
     private $articles;
 
+    #[ORM\OneToMany(targetEntity: Invoice::class, mappedBy: 'issuer')]
+    private $invoicesAsIssuer;
+
+    #[ORM\OneToMany(targetEntity: Invoice::class, mappedBy: 'receiver')]
+    private $invoicesAsReceiver;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -81,6 +87,8 @@ class Business
     public function __construct()
     {
         $this->articles = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->invoicesAsIssuer = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->invoicesAsReceiver = new \Doctrine\Common\Collections\ArrayCollection();
     }
 
     public function getId(): ?int
@@ -304,6 +312,66 @@ class Business
             // set the owning side to null (unless already changed)
             if ($article->getBusiness() === $this) {
                 $article->setBusiness(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return \Doctrine\Common\Collections\Collection<int, Invoice>
+     */
+    public function getInvoicesAsIssuer(): \Doctrine\Common\Collections\Collection
+    {
+        return $this->invoicesAsIssuer;
+    }
+
+    public function addInvoiceAsIssuer(Invoice $invoice): static
+    {
+        if (!$this->invoicesAsIssuer->contains($invoice)) {
+            $this->invoicesAsIssuer->add($invoice);
+            $invoice->setIssuer($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInvoiceAsIssuer(Invoice $invoice): static
+    {
+        if ($this->invoicesAsIssuer->removeElement($invoice)) {
+            // set the owning side to null (unless already changed)
+            if ($invoice->getIssuer() === $this) {
+                $invoice->setIssuer(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return \Doctrine\Common\Collections\Collection<int, Invoice>
+     */
+    public function getInvoicesAsReceiver(): \Doctrine\Common\Collections\Collection
+    {
+        return $this->invoicesAsReceiver;
+    }
+
+    public function addInvoiceAsReceiver(Invoice $invoice): static
+    {
+        if (!$this->invoicesAsReceiver->contains($invoice)) {
+            $this->invoicesAsReceiver->add($invoice);
+            $invoice->setReceiver($this);
+        }
+
+        return $this;
+    }
+
+    public function removeInvoiceAsReceiver(Invoice $invoice): static
+    {
+        if ($this->invoicesAsReceiver->removeElement($invoice)) {
+            // set the owning side to null (unless already changed)
+            if ($invoice->getReceiver() === $this) {
+                $invoice->setReceiver(null);
             }
         }
 
