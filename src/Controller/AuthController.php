@@ -120,21 +120,30 @@ class AuthController extends AbstractController
         $this->entityManager->persist($user);
 
         // If a new tenant was created, automatically create a business for it and set as issuer
-        // This must be done BEFORE flushing to avoid NOT NULL constraint violation
+        // We flush in stages to avoid circular dependency cycle
         if ($isNewTenant) {
+            // First flush: tenant and user (without issuerBusiness relationship)
+            $this->entityManager->flush();
+            
+            // Now create the business (tenant exists, so no cycle)
             $business = new Business();
             $business->setBusinessName($tenant->getName()); // Default to tenant name
             $business->setCreatedBy($user);
             $business->setTenant($tenant);
             $this->entityManager->persist($business);
             
-            // Set this business as the issuer business for the tenant
-            // This must be set before flushing to satisfy the NOT NULL constraint
+            // Flush business
+            $this->entityManager->flush();
+            
+            // Now set the issuer business relationship (both entities exist, no cycle)
             $tenant->setIssuerBusiness($business);
+            
+            // Final flush to update tenant with issuer_business_id
+            $this->entityManager->flush();
+        } else {
+            // If not a new tenant, just flush user
+            $this->entityManager->flush();
         }
-
-        // Flush everything together (tenant, user, and business if created)
-        $this->entityManager->flush();
 
         // Send verification email
         try {

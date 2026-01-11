@@ -28,7 +28,7 @@ class Tenant
     private bool $isAdmin = false;
 
     #[ORM\OneToOne(targetEntity: Business::class)]
-    #[ORM\JoinColumn(name: 'issuer_business_id', referencedColumnName: 'id', unique: true, nullable: false)]
+    #[ORM\JoinColumn(name: 'issuer_business_id', referencedColumnName: 'id', unique: true, nullable: true)]
     private ?Business $issuerBusiness = null;
 
     #[ORM\OneToMany(targetEntity: Business::class, mappedBy: 'tenant', cascade: ['persist', 'remove'])]

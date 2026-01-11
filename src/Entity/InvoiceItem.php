@@ -25,7 +25,7 @@ class InvoiceItem
     #[ORM\JoinColumn(name: 'article_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Article $article = null;
 
-    #[ORM\ManyToOne(targetEntity: Tax::class)]
+    #[ORM\ManyToOne(targetEntity: Tax::class, inversedBy: 'invoiceItems')]
     #[ORM\JoinColumn(name: 'tax_id', referencedColumnName: 'id', nullable: true, onDelete: 'SET NULL')]
     private ?Tax $tax = null;
 

@@ -18,11 +18,11 @@ class Invoice
     #[ORM\Column(type: Types::INTEGER)]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Business::class)]
+    #[ORM\ManyToOne(targetEntity: Business::class, inversedBy: 'invoicesAsIssuer')]
     #[ORM\JoinColumn(name: 'issuer_id', referencedColumnName: 'id', nullable: false)]
     private ?Business $issuer = null;
 
-    #[ORM\ManyToOne(targetEntity: Business::class)]
+    #[ORM\ManyToOne(targetEntity: Business::class, inversedBy: 'invoicesAsReceiver')]
     #[ORM\JoinColumn(name: 'receiver_id', referencedColumnName: 'id', nullable: false)]
     private ?Business $receiver = null;
 
