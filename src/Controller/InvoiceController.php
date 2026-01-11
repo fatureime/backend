@@ -367,6 +367,44 @@ class InvoiceController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
+        // For normal tenants: ensure invoice issuer is their tenant's issuer business
+        // For admin tenants: can update any invoice
+        if (!$user->getTenant() || !$user->getTenant()->isAdminTenant()) {
+            $tenantIssuerBusiness = $user->getTenant()->getIssuerBusiness();
+            if (!$tenantIssuerBusiness) {
+                return new JsonResponse(
+                    ['error' => 'Tenant does not have an issuer business'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            // Ensure the invoice's issuer is the tenant's issuer business
+            if ($invoice->getIssuer() !== $tenantIssuerBusiness) {
+                return new JsonResponse(
+                    ['error' => 'You can only update invoices issued by your tenant\'s business'],
+                    Response::HTTP_FORBIDDEN
+                );
+            }
+        }
+
+        // Prevent changing issuer for non-admin tenants
+        if (isset($data['issuer_id']) && is_numeric($data['issuer_id'])) {
+            if (!$user->getTenant() || !$user->getTenant()->isAdminTenant()) {
+                return new JsonResponse(
+                    ['error' => 'You cannot change the issuer business'],
+                    Response::HTTP_FORBIDDEN
+                );
+            }
+            // Admin tenants can change issuer
+            $issuerBusiness = $this->businessRepository->find((int) $data['issuer_id']);
+            if (!$issuerBusiness) {
+                return new JsonResponse(
+                    ['error' => 'Issuer business not found'],
+                    Response::HTTP_NOT_FOUND
+                );
+            }
+            $invoice->setIssuer($issuerBusiness);
+        }
+
         // Update invoice fields
         if (isset($data['receiver_id']) && is_numeric($data['receiver_id'])) {
             $receiverBusiness = $this->businessRepository->find((int) $data['receiver_id']);
