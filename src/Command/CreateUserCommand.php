@@ -2,6 +2,7 @@
 
 namespace App\Command;
 
+use App\Entity\Business;
 use App\Entity\Tenant;
 use App\Entity\User;
 use App\Repository\TenantRepository;
@@ -44,6 +45,7 @@ class CreateUserCommand extends Command
         }
 
         // Create or find tenant for this user
+        $isNewTenant = false;
         $tenant = $this->tenantRepository->findOneBy(['name' => 'Tenant for ' . $email]);
         if (!$tenant) {
             $tenant = new Tenant();
@@ -51,6 +53,7 @@ class CreateUserCommand extends Command
             $tenant->setHasPaid(false);
             $tenant->setIsAdmin(false);
             $this->entityManager->persist($tenant);
+            $isNewTenant = true;
             $io->info('Created new tenant for user');
         }
 
@@ -65,6 +68,17 @@ class CreateUserCommand extends Command
 
         $this->entityManager->persist($user);
         $this->entityManager->flush();
+
+        // If a new tenant was created, automatically create a business for it
+        if ($isNewTenant && $tenant->getBusinesses()->isEmpty()) {
+            $business = new Business();
+            $business->setBusinessName($tenant->getName()); // Default to tenant name
+            $business->setCreatedBy($user);
+            $business->setTenant($tenant);
+            $this->entityManager->persist($business);
+            $this->entityManager->flush();
+            $io->info('Created business for new tenant');
+        }
 
         $io->success(sprintf('User created successfully! Email: %s', $email));
 

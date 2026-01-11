@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Business;
 use App\Entity\Tenant;
 use App\Entity\User;
 use App\Repository\TenantRepository;
@@ -113,9 +114,19 @@ class AuthController extends AbstractController
             );
         }
 
-        // Save user
+        // Save user first (needed for business created_by)
         $this->entityManager->persist($user);
         $this->entityManager->flush();
+
+        // If a new tenant was created, automatically create a business for it
+        if ($tenant->getId() && $tenant->getBusinesses()->isEmpty()) {
+            $business = new Business();
+            $business->setBusinessName($tenant->getName()); // Default to tenant name
+            $business->setCreatedBy($user);
+            $business->setTenant($tenant);
+            $this->entityManager->persist($business);
+            $this->entityManager->flush();
+        }
 
         // Send verification email
         try {

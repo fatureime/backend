@@ -27,9 +27,8 @@ class Tenant
     #[ORM\Column(type: Types::BOOLEAN)]
     private bool $isAdmin = false;
 
-    // Business relationship will be added in Stage 2
-    // #[ORM\OneToOne(targetEntity: Business::class, mappedBy: 'tenant', cascade: ['persist', 'remove'])]
-    // private ?Business $business = null;
+    #[ORM\OneToMany(targetEntity: Business::class, mappedBy: 'tenant', cascade: ['persist', 'remove'])]
+    private $businesses;
 
     #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'tenant', cascade: ['persist'])]
     private $users;
@@ -42,6 +41,7 @@ class Tenant
 
     public function __construct()
     {
+        $this->businesses = new \Doctrine\Common\Collections\ArrayCollection();
         $this->users = new \Doctrine\Common\Collections\ArrayCollection();
     }
 
@@ -94,24 +94,32 @@ class Tenant
         return $this->isAdmin === true;
     }
 
-    public function getBusiness(): ?Business
+    /**
+     * @return \Doctrine\Common\Collections\Collection<int, Business>
+     */
+    public function getBusinesses(): \Doctrine\Common\Collections\Collection
     {
-        return $this->business;
+        return $this->businesses;
     }
 
-    public function setBusiness(?Business $business): static
+    public function addBusiness(Business $business): static
     {
-        // unset the owning side of the relation if necessary
-        if ($business === null && $this->business !== null) {
-            $this->business->setTenant(null);
-        }
-
-        // set the owning side of the relation if necessary
-        if ($business !== null && $business->getTenant() !== $this) {
+        if (!$this->businesses->contains($business)) {
+            $this->businesses->add($business);
             $business->setTenant($this);
         }
 
-        $this->business = $business;
+        return $this;
+    }
+
+    public function removeBusiness(Business $business): static
+    {
+        if ($this->businesses->removeElement($business)) {
+            // set the owning side to null (unless already changed)
+            if ($business->getTenant() === $this) {
+                $business->setTenant(null);
+            }
+        }
 
         return $this;
     }
