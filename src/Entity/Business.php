@@ -69,11 +69,19 @@ class Business
     #[ORM\JoinColumn(name: 'tenant_id', referencedColumnName: 'id', nullable: false)]
     private ?Tenant $tenant = null;
 
+    #[ORM\OneToMany(targetEntity: Article::class, mappedBy: 'business', cascade: ['persist', 'remove'])]
+    private $articles;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    public function __construct()
+    {
+        $this->articles = new \Doctrine\Common\Collections\ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -268,6 +276,36 @@ class Business
     public function setTenant(?Tenant $tenant): static
     {
         $this->tenant = $tenant;
+
+        return $this;
+    }
+
+    /**
+     * @return \Doctrine\Common\Collections\Collection<int, Article>
+     */
+    public function getArticles(): \Doctrine\Common\Collections\Collection
+    {
+        return $this->articles;
+    }
+
+    public function addArticle(Article $article): static
+    {
+        if (!$this->articles->contains($article)) {
+            $this->articles->add($article);
+            $article->setBusiness($this);
+        }
+
+        return $this;
+    }
+
+    public function removeArticle(Article $article): static
+    {
+        if ($this->articles->removeElement($article)) {
+            // set the owning side to null (unless already changed)
+            if ($article->getBusiness() === $this) {
+                $article->setBusiness(null);
+            }
+        }
 
         return $this;
     }

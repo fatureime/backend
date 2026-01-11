@@ -255,6 +255,7 @@ class AuthController extends AbstractController
         }
 
         $tenant = $user->getTenant();
+        $issuerBusiness = $tenant ? $tenant->getIssuerBusiness() : null;
         
         return new JsonResponse(
             [
@@ -269,6 +270,12 @@ class AuthController extends AbstractController
                         'name' => $tenant->getName(),
                         'has_paid' => $tenant->isHasPaid(),
                         'is_admin' => $tenant->isAdmin(),
+                        'issuer_business_id' => $issuerBusiness?->getId(),
+                        'issuer_business' => $issuerBusiness ? [
+                            'id' => $issuerBusiness->getId(),
+                            'business_name' => $issuerBusiness->getBusinessName(),
+                            'fiscal_number' => $issuerBusiness->getFiscalNumber(),
+                        ] : null,
                     ] : null,
                 ],
                 'remember_me_token' => $rememberMe ? $user->getRememberMeToken() : null
@@ -292,6 +299,7 @@ class AuthController extends AbstractController
         }
 
         $tenant = $user->getTenant();
+        $issuerBusiness = $tenant ? $tenant->getIssuerBusiness() : null;
 
         return new JsonResponse(
             [
@@ -305,6 +313,12 @@ class AuthController extends AbstractController
                     'name' => $tenant->getName(),
                     'has_paid' => $tenant->isHasPaid(),
                     'is_admin' => $tenant->isAdmin(),
+                    'issuer_business_id' => $issuerBusiness?->getId(),
+                    'issuer_business' => $issuerBusiness ? [
+                        'id' => $issuerBusiness->getId(),
+                        'business_name' => $issuerBusiness->getBusinessName(),
+                        'fiscal_number' => $issuerBusiness->getFiscalNumber(),
+                    ] : null,
                 ] : null,
             ],
             Response::HTTP_OK
