@@ -67,22 +67,24 @@ class CreateUserCommand extends Command
         $user->setIsActive(true);
 
         $this->entityManager->persist($user);
-        $this->entityManager->flush();
 
         // If a new tenant was created, automatically create a business for it and set as issuer
-        if ($isNewTenant && $tenant->getBusinesses()->isEmpty()) {
+        // This must be done BEFORE flushing to avoid NOT NULL constraint violation
+        if ($isNewTenant) {
             $business = new Business();
             $business->setBusinessName($tenant->getName()); // Default to tenant name
             $business->setCreatedBy($user);
             $business->setTenant($tenant);
             $this->entityManager->persist($business);
-            $this->entityManager->flush();
             
             // Set this business as the issuer business for the tenant
+            // This must be set before flushing to satisfy the NOT NULL constraint
             $tenant->setIssuerBusiness($business);
-            $this->entityManager->flush();
             $io->info('Created business for new tenant and set as issuer business');
         }
+
+        // Flush everything together (tenant, user, and business if created)
+        $this->entityManager->flush();
 
         $io->success(sprintf('User created successfully! Email: %s', $email));
 

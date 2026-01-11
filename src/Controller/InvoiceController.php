@@ -13,6 +13,7 @@ use App\Repository\BusinessRepository;
 use App\Repository\InvoiceItemRepository;
 use App\Repository\InvoiceRepository;
 use App\Repository\TaxRepository;
+use App\Service\InvoicePdfService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -33,7 +34,8 @@ class InvoiceController extends AbstractController
         private ArticleRepository $articleRepository,
         private TaxRepository $taxRepository,
         private ValidatorInterface $validator,
-        private LoggerInterface $logger
+        private LoggerInterface $logger,
+        private InvoicePdfService $pdfService
     ) {
     }
 
@@ -501,6 +503,67 @@ class InvoiceController extends AbstractController
             ['message' => 'Invoice deleted successfully'],
             Response::HTTP_OK
         );
+    }
+
+    /**
+     * Download invoice as PDF
+     */
+    #[Route('/api/businesses/{businessId}/invoices/{id}/pdf', name: 'app_invoice_pdf', methods: ['GET', 'OPTIONS'])]
+    #[IsGranted('ROLE_USER')]
+    public function downloadPdf(int $businessId, int $id, Request $request): Response
+    {
+        if ($request->getMethod() === 'OPTIONS') {
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $this->ensureUserIsActive($user);
+
+        $business = $this->businessRepository->find($businessId);
+
+        if (!$business) {
+            return new JsonResponse(
+                ['error' => 'Business not found'],
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        // Check if user can access this business
+        $this->ensureUserCanAccessBusiness($user, $business);
+
+        // Admin tenants can access any invoice by ID
+        // Normal tenants can only access invoices issued by the specified business
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            $invoice = $this->invoiceRepository->find($id);
+        } else {
+            $invoice = $this->invoiceRepository->findByIdAndIssuerBusiness($id, $business);
+        }
+
+        if (!$invoice) {
+            // Provide more specific error message
+            if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+                return new JsonResponse(
+                    ['error' => 'Invoice not found'],
+                    Response::HTTP_NOT_FOUND
+                );
+            } else {
+                return new JsonResponse(
+                    ['error' => 'Invoice not found or you do not have access to this invoice'],
+                    Response::HTTP_NOT_FOUND
+                );
+            }
+        }
+
+        // Ensure invoice items are loaded
+        $items = $this->invoiceItemRepository->findByInvoice($invoice);
+        foreach ($items as $item) {
+            $invoice->addItem($item);
+        }
+
+        // Generate and return PDF
+        return $this->pdfService->generatePdf($invoice);
     }
 
     /**

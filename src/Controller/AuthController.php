@@ -70,6 +70,7 @@ class AuthController extends AbstractController
 
         // Handle tenant assignment
         $tenant = null;
+        $isNewTenant = false;
         if (isset($data['tenant_id'])) {
             // User provided tenant_id - assign to existing tenant
             $tenant = $this->tenantRepository->find($data['tenant_id']);
@@ -85,6 +86,7 @@ class AuthController extends AbstractController
             $tenant->setName('Tenant for ' . $email);
             $tenant->setHasPaid(false);
             $tenant->setIsAdmin(false);
+            $isNewTenant = true;
             $this->entityManager->persist($tenant);
         }
 
@@ -114,23 +116,25 @@ class AuthController extends AbstractController
             );
         }
 
-        // Save user first (needed for business created_by)
+        // Persist user (needed for business created_by)
         $this->entityManager->persist($user);
-        $this->entityManager->flush();
 
         // If a new tenant was created, automatically create a business for it and set as issuer
-        if ($tenant->getId() && $tenant->getBusinesses()->isEmpty()) {
+        // This must be done BEFORE flushing to avoid NOT NULL constraint violation
+        if ($isNewTenant) {
             $business = new Business();
             $business->setBusinessName($tenant->getName()); // Default to tenant name
             $business->setCreatedBy($user);
             $business->setTenant($tenant);
             $this->entityManager->persist($business);
-            $this->entityManager->flush();
             
             // Set this business as the issuer business for the tenant
+            // This must be set before flushing to satisfy the NOT NULL constraint
             $tenant->setIssuerBusiness($business);
-            $this->entityManager->flush();
         }
+
+        // Flush everything together (tenant, user, and business if created)
+        $this->entityManager->flush();
 
         // Send verification email
         try {
