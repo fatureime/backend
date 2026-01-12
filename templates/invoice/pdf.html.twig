@@ -391,71 +391,31 @@
                     <td class="business-card">
                         <h3>Fatura Nga: {{ invoice.issuer.businessName }}</h3>
                         <div class="business-details">
-                            {% if invoice.issuer.tradeName %}
-                            <p><strong>Emri Tregtar:</strong> {{ invoice.issuer.tradeName }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.businessType %}
-                            <p><strong>Lloji i Biznesit:</strong> {{ invoice.issuer.businessType }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.uniqueIdentifierNumber %}
-                            <p><strong>Numri Unik:</strong> {{ invoice.issuer.uniqueIdentifierNumber }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.vatNumber %}
-                            <p><strong>Numri i TVSH-së:</strong> {{ invoice.issuer.vatNumber }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.municipality %}
-                            <p><strong>Komuna:</strong> {{ invoice.issuer.municipality }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.address %}
-                            <p><strong>Adresa:</strong> {{ invoice.issuer.address }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.phone %}
-                            <p><strong>Telefoni:</strong> {{ invoice.issuer.phone }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.email %}
-                            <p><strong>Email:</strong> {{ invoice.issuer.email }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.capital %}
-                            <p><strong>Kapitali:</strong> {{ invoice.issuer.capital|number_format(2, '.', '') }} €</p>
-                            {% endif %}
-                            {% if invoice.issuer.arbkStatus %}
-                            <p><strong>Statusi ARBK:</strong> {{ invoice.issuer.arbkStatus }}</p>
-                            {% endif %}
+                            <p><strong>Emri Tregtar:</strong> {{ invoice.issuer.tradeName  }}</p>
+                            <p><strong>Lloji i Biznesit:</strong> {{ invoice.issuer.businessType  }}</p>
+                            <p><strong>Numri Unik:</strong> {{ invoice.issuer.uniqueIdentifierNumber  }}</p>
+                            <p><strong>Numri i TVSH-së:</strong> {{ invoice.issuer.vatNumber  }}</p>
+                            <p><strong>Komuna:</strong> {{ invoice.issuer.municipality  }}</p>
+                            <p><strong>Adresa:</strong> {{ invoice.issuer.address  }}</p>
+                            <p><strong>Telefoni:</strong> {{ invoice.issuer.phone  }}</p>
+                            <p><strong>Email:</strong> {{ invoice.issuer.email  }}</p>
+                            <p><strong>Kapitali:</strong> {{ invoice.issuer.capital ? invoice.issuer.capital|number_format(2, '.', '') ~ ' €' : 'N/A' }}</p>
+                            <p><strong>Statusi ARBK:</strong> {{ invoice.issuer.arbkStatus  }}</p>
                         </div>
                     </td>
                     <td class="business-card">
-                        <h3>Fatura Prej: {{ invoice.receiver.businessName }}</h3>
+                        <h3>Fatura Për: {{ invoice.receiver.businessName }}</h3>
                         <div class="business-details">
-                            {% if invoice.receiver.tradeName %}
-                            <p><strong>Emri Tregtar:</strong> {{ invoice.receiver.tradeName }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.businessType %}
-                            <p><strong>Lloji i Biznesit:</strong> {{ invoice.receiver.businessType }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.uniqueIdentifierNumber %}
-                            <p><strong>Numri Unik:</strong> {{ invoice.receiver.uniqueIdentifierNumber }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.vatNumber %}
-                            <p><strong>Numri i TVSH-së:</strong> {{ invoice.receiver.vatNumber }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.municipality %}
-                            <p><strong>Komuna:</strong> {{ invoice.receiver.municipality }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.address %}
-                            <p><strong>Adresa:</strong> {{ invoice.receiver.address }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.phone %}
-                            <p><strong>Telefoni:</strong> {{ invoice.receiver.phone }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.email %}
-                            <p><strong>Email:</strong> {{ invoice.receiver.email }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.capital %}
-                            <p><strong>Kapitali:</strong> {{ invoice.receiver.capital|number_format(2, '.', '') }} €</p>
-                            {% endif %}
-                            {% if invoice.receiver.arbkStatus %}
-                            <p><strong>Statusi ARBK:</strong> {{ invoice.receiver.arbkStatus }}</p>
-                            {% endif %}
+                            <p><strong>Emri Tregtar:</strong> {{ invoice.receiver.tradeName  }}</p>
+                            <p><strong>Lloji i Biznesit:</strong> {{ invoice.receiver.businessType  }}</p>
+                            <p><strong>Numri Unik:</strong> {{ invoice.receiver.uniqueIdentifierNumber  }}</p>
+                            <p><strong>Numri i TVSH-së:</strong> {{ invoice.receiver.vatNumber  }}</p>
+                            <p><strong>Komuna:</strong> {{ invoice.receiver.municipality  }}</p>
+                            <p><strong>Adresa:</strong> {{ invoice.receiver.address  }}</p>
+                            <p><strong>Telefoni:</strong> {{ invoice.receiver.phone  }}</p>
+                            <p><strong>Email:</strong> {{ invoice.receiver.email  }}</p>
+                            <p><strong>Kapitali:</strong> {{ invoice.receiver.capital ? invoice.receiver.capital|number_format(2, '.', '') ~ ' €' : 'N/A' }}</p>
+                            <p><strong>Statusi ARBK:</strong> {{ invoice.receiver.arbkStatus  }}</p>
                         </div>
                     </td>
                 </tr>
@@ -572,7 +532,7 @@
         
         <!-- Footer -->
         <div class="invoice-footer">
-            Kjo fature i nenshtrohet LIGHI NR. 03/L-008 Per proceduren permbarimore. Te paguhet maksimumi 5 dite nga ita e pranimit
+            Kjo faturë i nënshtrohet LIGJI NR. 03/L-008 Për procedurën përmbarimore. Te paguhet maksimumi 5 ditë nga dita e pranimit.
         </div>
     </div>
 </body>
