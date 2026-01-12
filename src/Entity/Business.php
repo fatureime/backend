@@ -61,6 +61,12 @@ class Business
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
     private ?string $arbkStatus = null;
 
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    private ?string $logo = null;
+
+    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    private ?string $vatNumber = null;
+
     #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(name: 'created_by_id', referencedColumnName: 'id', nullable: false)]
     private ?User $createdBy = null;
@@ -260,6 +266,30 @@ class Business
     public function setArbkStatus(?string $arbkStatus): static
     {
         $this->arbkStatus = $arbkStatus;
+
+        return $this;
+    }
+
+    public function getLogo(): ?string
+    {
+        return $this->logo;
+    }
+
+    public function setLogo(?string $logo): static
+    {
+        $this->logo = $logo;
+
+        return $this;
+    }
+
+    public function getVatNumber(): ?string
+    {
+        return $this->vatNumber;
+    }
+
+    public function setVatNumber(?string $vatNumber): static
+    {
+        $this->vatNumber = $vatNumber;
 
         return $this;
     }

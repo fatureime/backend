@@ -7,6 +7,9 @@ use App\Entity\User;
 use App\Repository\BusinessRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Component\HttpFoundation\File\Exception\FileException;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,7 +22,8 @@ class BusinessController extends AbstractController
     public function __construct(
         private EntityManagerInterface $entityManager,
         private BusinessRepository $businessRepository,
-        private ValidatorInterface $validator
+        private ValidatorInterface $validator,
+        private ParameterBagInterface $parameterBag
     ) {
     }
 
@@ -49,8 +53,8 @@ class BusinessController extends AbstractController
                 : [];
         }
 
-        $data = array_map(function (Business $business) {
-            return $this->serializeBusiness($business);
+        $data = array_map(function (Business $business) use ($request) {
+            return $this->serializeBusiness($business, $request);
         }, $businesses);
 
         return new JsonResponse($data, Response::HTTP_OK);
@@ -84,7 +88,7 @@ class BusinessController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        return new JsonResponse($this->serializeBusiness($business), Response::HTTP_OK);
+        return new JsonResponse($this->serializeBusiness($business, $request), Response::HTTP_OK);
     }
 
     /**
@@ -112,7 +116,13 @@ class BusinessController extends AbstractController
             );
         }
 
-        $data = json_decode($request->getContent(), true);
+        // Handle multipart/form-data (for file uploads) or JSON
+        $data = [];
+        if ($request->headers->get('Content-Type') && str_contains($request->headers->get('Content-Type'), 'multipart/form-data')) {
+            $data = $request->request->all();
+        } else {
+            $data = json_decode($request->getContent(), true) ?? [];
+        }
 
         if (!isset($data['business_name']) || empty(trim($data['business_name']))) {
             return new JsonResponse(
@@ -175,6 +185,22 @@ class BusinessController extends AbstractController
         if (isset($data['arbk_status'])) {
             $business->setArbkStatus(trim($data['arbk_status']) ?: null);
         }
+        if (isset($data['vat_number'])) {
+            $business->setVatNumber(trim($data['vat_number']) ?: null);
+        }
+
+        // Handle logo file upload
+        $logoFile = $request->files->get('logo');
+        if ($logoFile instanceof UploadedFile) {
+            $logoPath = $this->handleLogoUpload($logoFile, $business->getId() ?? 0);
+            if ($logoPath === null) {
+                return new JsonResponse(
+                    ['error' => 'Invalid logo file. Only image files (jpg, png, gif, svg, webp) up to 5MB are allowed.'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            $business->setLogo($logoPath);
+        }
 
         // Validate entity
         $errors = $this->validator->validate($business);
@@ -192,6 +218,26 @@ class BusinessController extends AbstractController
         $this->entityManager->persist($business);
         $this->entityManager->flush();
 
+        // If logo was uploaded, update the filename with the actual business ID
+        if ($logoFile instanceof UploadedFile && $business->getLogo()) {
+            $oldPath = $business->getLogo();
+            $newPath = $this->renameLogoFile($oldPath, $business->getId());
+            if ($newPath) {
+                $business->setLogo($newPath);
+                $this->entityManager->flush();
+            }
+        }
+
+        // If logo was uploaded, update the filename with the actual business ID
+        if ($logoFile instanceof UploadedFile && $business->getLogo()) {
+            $oldPath = $business->getLogo();
+            $newPath = $this->renameLogoFile($oldPath, $business->getId());
+            if ($newPath) {
+                $business->setLogo($newPath);
+                $this->entityManager->flush();
+            }
+        }
+
         // If tenant has no issuer business, set this first business as issuer
         if (!$tenant->getIssuerBusiness()) {
             $tenant->setIssuerBusiness($business);
@@ -199,7 +245,7 @@ class BusinessController extends AbstractController
         }
 
         return new JsonResponse(
-            $this->serializeBusiness($business),
+            $this->serializeBusiness($business, $request),
             Response::HTTP_CREATED
         );
     }
@@ -232,7 +278,13 @@ class BusinessController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        $data = json_decode($request->getContent(), true);
+        // Handle multipart/form-data (for file uploads) or JSON
+        $data = [];
+        if ($request->headers->get('Content-Type') && str_contains($request->headers->get('Content-Type'), 'multipart/form-data')) {
+            $data = $request->request->all();
+        } else {
+            $data = json_decode($request->getContent(), true) ?? [];
+        }
 
         // Update fields if provided
         if (isset($data['business_name'])) {
@@ -285,6 +337,28 @@ class BusinessController extends AbstractController
         if (isset($data['arbk_status'])) {
             $business->setArbkStatus(trim($data['arbk_status']) ?: null);
         }
+        if (isset($data['vat_number'])) {
+            $business->setVatNumber(trim($data['vat_number']) ?: null);
+        }
+
+        // Handle logo file upload
+        $logoFile = $request->files->get('logo');
+        if ($logoFile instanceof UploadedFile) {
+            // Delete old logo if exists
+            $oldLogo = $business->getLogo();
+            if ($oldLogo) {
+                $this->deleteLogoFile($oldLogo);
+            }
+            
+            $logoPath = $this->handleLogoUpload($logoFile, $business->getId());
+            if ($logoPath === null) {
+                return new JsonResponse(
+                    ['error' => 'Invalid logo file. Only image files (jpg, png, gif, svg, webp) up to 5MB are allowed.'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            $business->setLogo($logoPath);
+        }
 
         // Validate entity
         $errors = $this->validator->validate($business);
@@ -301,7 +375,7 @@ class BusinessController extends AbstractController
 
         $this->entityManager->flush();
 
-        return new JsonResponse($this->serializeBusiness($business), Response::HTTP_OK);
+        return new JsonResponse($this->serializeBusiness($business, $request), Response::HTTP_OK);
     }
 
     /**
@@ -339,6 +413,12 @@ class BusinessController extends AbstractController
                 ['error' => 'Cannot delete issuer business. This business is used for invoice creation.'],
                 Response::HTTP_BAD_REQUEST
             );
+        }
+
+        // Delete logo file if exists
+        $logo = $business->getLogo();
+        if ($logo) {
+            $this->deleteLogoFile($logo);
         }
 
         $this->entityManager->remove($business);
@@ -383,7 +463,7 @@ class BusinessController extends AbstractController
     /**
      * Serialize business to array
      */
-    private function serializeBusiness(Business $business): array
+    private function serializeBusiness(Business $business, ?Request $request = null): array
     {
         $createdBy = $business->getCreatedBy();
         $tenant = $business->getTenant();
@@ -404,6 +484,8 @@ class BusinessController extends AbstractController
             'email' => $business->getEmail(),
             'capital' => $business->getCapital(),
             'arbk_status' => $business->getArbkStatus(),
+            'logo' => $this->getLogoUrl($business->getLogo(), $request),
+            'vat_number' => $business->getVatNumber(),
             'created_by_id' => $createdBy?->getId(),
             'tenant_id' => $tenant?->getId(),
             'created_at' => $business->getCreatedAt()?->format('c'),
@@ -417,5 +499,106 @@ class BusinessController extends AbstractController
                 'name' => $tenant->getName(),
             ] : null,
         ];
+    }
+
+    /**
+     * Handle logo file upload
+     */
+    private function handleLogoUpload(UploadedFile $file, int $businessId): ?string
+    {
+        // Validate file type
+        $allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/svg+xml', 'image/webp'];
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'];
+        
+        $mimeType = $file->getMimeType();
+        $extension = strtolower($file->guessExtension() ?? $file->getClientOriginalExtension());
+        
+        if (!in_array($mimeType, $allowedMimeTypes) || !in_array($extension, $allowedExtensions)) {
+            return null;
+        }
+
+        // Validate file size (5MB max)
+        if ($file->getSize() > 5 * 1024 * 1024) {
+            return null;
+        }
+
+        // Create uploads directory if it doesn't exist
+        $uploadDir = $this->parameterBag->get('kernel.project_dir') . '/public/uploads/logos';
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0755, true);
+        }
+
+        // Generate unique filename
+        $timestamp = time();
+        $filename = sprintf('business-%d-%d.%s', $businessId ?: $timestamp, $timestamp, $extension);
+        $filePath = 'uploads/logos/' . $filename;
+
+        try {
+            $file->move($uploadDir, $filename);
+            return $filePath;
+        } catch (FileException $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Rename logo file with actual business ID
+     */
+    private function renameLogoFile(string $oldPath, int $businessId): ?string
+    {
+        $uploadDir = $this->parameterBag->get('kernel.project_dir') . '/public';
+        $fullOldPath = $uploadDir . '/' . $oldPath;
+        
+        if (!file_exists($fullOldPath)) {
+            return null;
+        }
+
+        $pathInfo = pathinfo($oldPath);
+        $extension = $pathInfo['extension'] ?? 'jpg';
+        $newFilename = sprintf('business-%d-%d.%s', $businessId, time(), $extension);
+        $newPath = 'uploads/logos/' . $newFilename;
+        $fullNewPath = $uploadDir . '/' . $newPath;
+
+        if (rename($fullOldPath, $fullNewPath)) {
+            return $newPath;
+        }
+
+        return null;
+    }
+
+    /**
+     * Delete logo file
+     */
+    private function deleteLogoFile(string $logoPath): void
+    {
+        $uploadDir = $this->parameterBag->get('kernel.project_dir') . '/public';
+        $fullPath = $uploadDir . '/' . $logoPath;
+        
+        if (file_exists($fullPath) && is_file($fullPath)) {
+            unlink($fullPath);
+        }
+    }
+
+    /**
+     * Get full URL for logo
+     */
+    private function getLogoUrl(?string $logoPath, ?Request $request = null): ?string
+    {
+        if (!$logoPath) {
+            return null;
+        }
+
+        // If request is available, use it to construct the URL
+        if ($request) {
+            $scheme = $request->getScheme();
+            $host = $request->getHttpHost();
+            return sprintf('%s://%s/%s', $scheme, $host, ltrim($logoPath, '/'));
+        }
+
+        // Fallback: construct from server variables
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost:8000';
+        
+        return sprintf('%s://%s/%s', $scheme, $host, ltrim($logoPath, '/'));
     }
 }

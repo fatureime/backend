@@ -40,6 +40,13 @@ class InvoicePdfService
         // Generate QR code
         $qrCodeBase64 = $this->generateQrCode($invoice);
 
+        // Convert logos to base64
+        $issuerLogo = $this->convertLogoToBase64($invoice->getIssuer()->getLogo());
+        $receiverLogo = $this->convertLogoToBase64($invoice->getReceiver()?->getLogo());
+
+        // Calculate tax totals grouped by rate
+        $taxGroups = $this->calculateTaxGroups($invoice);
+
         // Get frontend URL
         $frontendUrl = $this->parameterBag->get('frontend_url');
         $invoiceUrl = sprintf(
@@ -55,6 +62,9 @@ class InvoicePdfService
             'taxTotal' => $taxTotal,
             'qrCodeBase64' => $qrCodeBase64,
             'invoiceUrl' => $invoiceUrl,
+            'issuerLogo' => $issuerLogo,
+            'receiverLogo' => $receiverLogo,
+            'taxGroups' => $taxGroups,
         ]);
 
         // Load HTML into DomPDF
@@ -152,5 +162,94 @@ class InvoicePdfService
             return '';
         }
         return $date->format('d.m.Y');
+    }
+
+    /**
+     * Calculate tax totals grouped by tax rate
+     */
+    private function calculateTaxGroups(Invoice $invoice): array
+    {
+        $taxGroups = [];
+        
+        foreach ($invoice->getItems() as $item) {
+            $tax = $item->getTax();
+            $taxRate = null;
+            $taxLabel = 'E përjashtuar';
+            
+            if ($tax && $tax->getRate() !== null) {
+                $taxRate = $tax->getRate();
+                $taxLabel = 'TVSH ' . $taxRate . '%';
+            }
+            
+            $key = $taxRate ?? 'exempt';
+            
+            if (!isset($taxGroups[$key])) {
+                $taxGroups[$key] = [
+                    'label' => $taxLabel,
+                    'rate' => $taxRate,
+                    'total' => '0.00',
+                ];
+            }
+            
+            $currentTotal = $taxGroups[$key]['total'];
+            $itemTaxAmount = $item->getTaxAmount() ?? '0.00';
+            $taxGroups[$key]['total'] = (string) bcadd($currentTotal, $itemTaxAmount, 2);
+        }
+        
+        // Sort by rate (exempt last)
+        uksort($taxGroups, function($a, $b) {
+            if ($a === 'exempt') return 1;
+            if ($b === 'exempt') return -1;
+            return (float)$a <=> (float)$b;
+        });
+        
+        return $taxGroups;
+    }
+
+    /**
+     * Convert logo file to base64 for PDF embedding
+     * Returns array with 'data' (base64) and 'mime' (MIME type) or null
+     */
+    private function convertLogoToBase64(?string $logoPath): ?array
+    {
+        if (!$logoPath) {
+            return null;
+        }
+
+        try {
+            $projectDir = $this->parameterBag->get('kernel.project_dir');
+            $fullPath = $projectDir . '/public/' . ltrim($logoPath, '/');
+            
+            if (!file_exists($fullPath) || !is_file($fullPath)) {
+                return null;
+            }
+
+            $imageData = file_get_contents($fullPath);
+            if ($imageData === false) {
+                return null;
+            }
+
+            // Determine MIME type from file extension
+            $extension = strtolower(pathinfo($fullPath, PATHINFO_EXTENSION));
+            $mimeTypes = [
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'svg' => 'image/svg+xml',
+                'webp' => 'image/webp',
+            ];
+            
+            $mimeType = $mimeTypes[$extension] ?? 'image/jpeg';
+            
+            return [
+                'data' => base64_encode($imageData),
+                'mime' => $mimeType,
+            ];
+        } catch (\Exception $e) {
+            // If logo conversion fails, return null
+            // Template will handle missing logo gracefully
+            return null;
+        }
     }
 }

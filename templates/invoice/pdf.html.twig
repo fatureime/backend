@@ -11,7 +11,20 @@
         }
         
         @page {
-            margin: 25mm 20mm;
+            margin: 25mm 20mm 30mm 20mm;
+        }
+        
+        .invoice-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 9px;
+            color: #666;
+            padding: 10mm 20mm;
+            border-top: 1px solid #e0e0e0;
+            background: white;
         }
         
         body {
@@ -52,6 +65,11 @@
         .invoice-header-info {
             text-align: right;
             font-size: 11px;
+        }
+        
+        .invoice-date-large {
+            font-size: 16px;
+            font-weight: 600;
         }
         
         .invoice-header-info > div {
@@ -101,6 +119,13 @@
             color: #333;
             border-bottom: 1px solid #e0e0e0;
             padding-bottom: 5px;
+        }
+        
+        .business-logo {
+            max-width: 100px;
+            max-height: 60px;
+            margin-bottom: 8px;
+            display: block;
         }
         
         .business-details {
@@ -260,6 +285,32 @@
             padding-top: 8px;
         }
         
+        .tax-subtable {
+            width: 100%;
+            margin-top: 8px;
+            border-collapse: collapse;
+        }
+        
+        .tax-subtable tr {
+            border-bottom: none;
+        }
+        
+        .tax-subtable td {
+            padding: 4px 0;
+            font-size: 10px;
+        }
+        
+        .tax-subtable .tax-rate-label {
+            text-align: left;
+            color: #666;
+            padding-left: 15px;
+        }
+        
+        .tax-subtable .tax-rate-value {
+            text-align: right;
+            color: #333;
+        }
+        
         .total-final {
             border-top: 2px solid #333;
             margin-top: 10px;
@@ -312,34 +363,21 @@
             <table class="invoice-header-table">
                 <tr>
                     <td>
-                        <h1>Fatura #{{ invoice.invoiceNumber }}</h1>
+                        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: nowrap;">
+                            {% if issuerLogo %}
+                            <img src="data:{{ issuerLogo.mime }};base64,{{ issuerLogo.data }}" alt="Logo" style="max-width: 120px; max-height: 80px; object-fit: contain; flex-shrink: 0;" />
+                            {% endif %}
+                            <h1 style="margin: 0; white-space: nowrap;">Fatura {{ invoice.invoiceNumber }}</h1>
+                        </div>
                     </td>
                     <td class="invoice-header-info">
                         <div>
                             <strong>Data e Faturës:</strong>
-                            <span>{{ invoice.invoiceDate ? invoice.invoiceDate.format('d.m.Y') : '' }}</span>
+                            <span class="invoice-date-large">{{ invoice.invoiceDate ? invoice.invoiceDate.format('d.m.Y') : '' }}</span>
                         </div>
                         <div>
                             <strong>Data e Maturimit:</strong>
                             <span>{{ invoice.dueDate ? invoice.dueDate.format('d.m.Y') : '' }}</span>
-                        </div>
-                        <div>
-                            <strong>Statusi:</strong>
-                            <span class="status-badge status-{{ invoice.status }}">
-                                {% if invoice.status == 'draft' %}
-                                    Draft
-                                {% elseif invoice.status == 'sent' %}
-                                    Dërguar
-                                {% elseif invoice.status == 'paid' %}
-                                    Paguar
-                                {% elseif invoice.status == 'overdue' %}
-                                    Vonuar
-                                {% elseif invoice.status == 'cancelled' %}
-                                    Anuluar
-                                {% else %}
-                                    {{ invoice.status }}
-                                {% endif %}
-                            </span>
                         </div>
                     </td>
                 </tr>
@@ -351,9 +389,8 @@
             <table class="businesses-table">
                 <tr>
                     <td class="business-card">
-                        <h3>Lëshuesi</h3>
+                        <h3>Fatura Nga: {{ invoice.issuer.businessName }}</h3>
                         <div class="business-details">
-                            <p><strong>Emri:</strong> {{ invoice.issuer.businessName }}</p>
                             {% if invoice.issuer.tradeName %}
                             <p><strong>Emri Tregtar:</strong> {{ invoice.issuer.tradeName }}</p>
                             {% endif %}
@@ -363,17 +400,8 @@
                             {% if invoice.issuer.uniqueIdentifierNumber %}
                             <p><strong>Numri Unik:</strong> {{ invoice.issuer.uniqueIdentifierNumber }}</p>
                             {% endif %}
-                            {% if invoice.issuer.businessNumber %}
-                            <p><strong>Numri i Biznesit:</strong> {{ invoice.issuer.businessNumber }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.fiscalNumber %}
-                            <p><strong>Numri Fiskal:</strong> {{ invoice.issuer.fiscalNumber }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.numberOfEmployees %}
-                            <p><strong>Numri i Punëtorëve:</strong> {{ invoice.issuer.numberOfEmployees }}</p>
-                            {% endif %}
-                            {% if invoice.issuer.registrationDate %}
-                            <p><strong>Data e Regjistrimit:</strong> {{ invoice.issuer.registrationDate.format('d.m.Y') }}</p>
+                            {% if invoice.issuer.vatNumber %}
+                            <p><strong>Numri i TVSH-së:</strong> {{ invoice.issuer.vatNumber }}</p>
                             {% endif %}
                             {% if invoice.issuer.municipality %}
                             <p><strong>Komuna:</strong> {{ invoice.issuer.municipality }}</p>
@@ -396,9 +424,8 @@
                         </div>
                     </td>
                     <td class="business-card">
-                        <h3>Marrësi</h3>
+                        <h3>Fatura Prej: {{ invoice.receiver.businessName }}</h3>
                         <div class="business-details">
-                            <p><strong>Emri:</strong> {{ invoice.receiver.businessName }}</p>
                             {% if invoice.receiver.tradeName %}
                             <p><strong>Emri Tregtar:</strong> {{ invoice.receiver.tradeName }}</p>
                             {% endif %}
@@ -408,17 +435,8 @@
                             {% if invoice.receiver.uniqueIdentifierNumber %}
                             <p><strong>Numri Unik:</strong> {{ invoice.receiver.uniqueIdentifierNumber }}</p>
                             {% endif %}
-                            {% if invoice.receiver.businessNumber %}
-                            <p><strong>Numri i Biznesit:</strong> {{ invoice.receiver.businessNumber }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.fiscalNumber %}
-                            <p><strong>Numri Fiskal:</strong> {{ invoice.receiver.fiscalNumber }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.numberOfEmployees %}
-                            <p><strong>Numri i Punëtorëve:</strong> {{ invoice.receiver.numberOfEmployees }}</p>
-                            {% endif %}
-                            {% if invoice.receiver.registrationDate %}
-                            <p><strong>Data e Regjistrimit:</strong> {{ invoice.receiver.registrationDate.format('d.m.Y') }}</p>
+                            {% if invoice.receiver.vatNumber %}
+                            <p><strong>Numri i TVSH-së:</strong> {{ invoice.receiver.vatNumber }}</p>
                             {% endif %}
                             {% if invoice.receiver.municipality %}
                             <p><strong>Komuna:</strong> {{ invoice.receiver.municipality }}</p>
@@ -446,7 +464,6 @@
         
         <!-- Invoice Items -->
         <div class="items-section">
-            <h2>Artikujt</h2>
             {% if invoice.items and invoice.items|length > 0 %}
             <div class="items-table-container">
                 <table class="items-table">
@@ -510,14 +527,36 @@
                         <div class="totals-card">
                             <table class="totals-table">
                                 <tr>
-                                    <td class="total-label">Nëntotali:</td>
+                                    <td class="total-label">Vlera pa TVSH:</td>
                                     <td class="total-value">{{ invoice.subtotal|number_format(2, '.', '') }} €</td>
                                 </tr>
                                 <tr class="total-tax">
-                                    <td class="total-label">Tatimi Total:</td>
-                                    <td class="total-value">
-                                        {% set taxTotal = invoice.total - invoice.subtotal %}
-                                        {{ taxTotal|number_format(2, '.', '') }} €
+                                    <td class="total-label" colspan="2">
+                                        TVSH dhe perqindja:
+                                        {% if taxGroups|length > 0 %}
+                                        <table class="tax-subtable">
+                                            {% for key, group in taxGroups %}
+                                                {% if group.total|number_format(2, '.', '')|number_format(2, '.', '') > 0 %}
+                                                <tr>
+                                                    <td class="tax-rate-label">{{ group.label }}</td>
+                                                    <td class="tax-rate-value">{{ group.total|number_format(2, '.', '') }} €</td>
+                                                </tr>
+                                                {% endif %}
+                                            {% endfor %}
+                                            <tr style="border-top: 1px solid #e0e0e0; margin-top: 4px; padding-top: 4px;">
+                                                <td class="tax-rate-label" style="font-weight: 600;">Totali TVSH:</td>
+                                                <td class="tax-rate-value" style="font-weight: 600;">
+                                                    {% set taxTotal = invoice.total - invoice.subtotal %}
+                                                    {{ taxTotal|number_format(2, '.', '') }} €
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        {% else %}
+                                        <div style="text-align: right; margin-top: 8px;">
+                                            {% set taxTotal = invoice.total - invoice.subtotal %}
+                                            {{ taxTotal|number_format(2, '.', '') }} €
+                                        </div>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 <tr class="total-final">
@@ -529,6 +568,11 @@
                     </td>
                 </tr>
             </table>
+        </div>
+        
+        <!-- Footer -->
+        <div class="invoice-footer">
+            Kjo fature i nenshtrohet LIGHI NR. 03/L-008 Per proceduren permbarimore. Te paguhet maksimumi 5 dite nga ita e pranimit
         </div>
     </div>
 </body>
