@@ -10,116 +10,170 @@
             box-sizing: border-box;
         }
         
+        @page {
+            margin: 25mm 20mm;
+        }
+        
         body {
             font-family: 'DejaVu Sans', Arial, sans-serif;
             font-size: 12px;
             color: #333;
             line-height: 1.5;
-        }
-        
-        .invoice-container {
-            max-width: 210mm;
-            margin: 0 auto;
-            padding: 20mm;
             background: #fff;
         }
         
+        .invoice-container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            padding: 10mm 5mm;
+        }
+        
+        /* Invoice Header */
         .invoice-header {
-            border-bottom: 3px solid #333;
-            padding-bottom: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+        }
+        
+        .invoice-header-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .invoice-header-table td {
+            vertical-align: middle;
         }
         
         .invoice-header h1 {
-            font-size: 28px;
+            font-size: 24px;
             color: #333;
-            margin-bottom: 10px;
+            margin: 0;
         }
         
-        .invoice-meta {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-        }
-        
-        .invoice-meta-item {
+        .invoice-header-info {
+            text-align: right;
             font-size: 11px;
         }
         
-        .invoice-meta-label {
-            font-weight: bold;
-            display: inline-block;
-            min-width: 100px;
+        .invoice-header-info > div {
+            margin-bottom: 3px;
+            line-height: 1.8;
         }
         
+        .invoice-header-info strong {
+            font-weight: 600;
+            color: #666;
+            margin-right: 5px;
+        }
+        
+        .invoice-header-info span {
+            color: #333;
+        }
+        
+        .status-badge {
+            display: inline;
+            font-size: 11px;
+        }
+        
+        /* Businesses Section */
         .businesses-section {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
+            width: 100%;
+            margin-bottom: 25px;
+        }
+        
+        .businesses-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 15px 0;
         }
         
         .business-card {
-            width: 48%;
-            padding: 15px;
+            width: 50%;
             background: #f9f9f9;
-            border: 1px solid #ddd;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 12px;
+            vertical-align: top;
         }
         
         .business-card h3 {
-            font-size: 16px;
-            margin-bottom: 10px;
+            font-size: 14px;
+            margin: 0 0 8px 0;
             color: #333;
-            border-bottom: 2px solid #333;
+            border-bottom: 1px solid #e0e0e0;
             padding-bottom: 5px;
         }
         
-        .business-info {
-            font-size: 11px;
+        .business-details {
+            font-size: 9px;
         }
         
-        .business-info p {
-            margin: 5px 0;
+        .business-details p {
+            margin: 4px 0;
+            color: #666;
+            line-height: 1.3;
         }
         
-        .business-info strong {
-            display: inline-block;
-            min-width: 120px;
+        .business-details strong {
+            color: #333;
+            font-weight: 600;
+            margin-right: 5px;
         }
         
+        /* Items Section */
         .items-section {
-            margin-top: 30px;
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
         
         .items-section h2 {
             font-size: 18px;
-            margin-bottom: 15px;
             color: #333;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 8px;
+        }
+        
+        .items-table-container {
+            margin-top: 15px;
         }
         
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            background: white;
+        }
+        
+        .items-table thead {
+            background: #f5f5f5;
         }
         
         .items-table th {
-            background: #333;
-            color: #fff;
-            padding: 10px 8px;
+            padding: 12px;
             text-align: left;
+            font-weight: 600;
+            color: #333;
+            border-bottom: 2px solid #e0e0e0;
             font-size: 11px;
-            font-weight: bold;
+        }
+        
+        .items-table tbody tr {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .items-table tbody tr:last-child {
+            border-bottom: none;
         }
         
         .items-table td {
-            padding: 8px;
-            border-bottom: 1px solid #ddd;
+            padding: 12px;
+            color: #666;
             font-size: 11px;
+            vertical-align: middle;
+            white-space: nowrap;
         }
         
-        .items-table tr:nth-child(even) {
-            background: #f9f9f9;
+        .items-table td.description {
+            white-space: normal;
+            word-wrap: break-word;
         }
         
         .items-table .text-right {
@@ -130,73 +184,124 @@
             text-align: center;
         }
         
+        .items-table tbody tr td strong {
+            color: #333;
+            font-weight: 600;
+        }
+        
+        .tax-exempt {
+            color: #9e9e9e;
+            font-style: italic;
+        }
+        
+        /* Totals Section */
         .totals-section {
-            margin-top: 20px;
-            display: flex;
-            justify-content: flex-end;
+            margin-top: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .totals-wrapper {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 20px 0;
+        }
+        
+        .totals-wrapper td {
+            vertical-align: middle;
+        }
+        
+        .qr-wrapper {
+            width: 100px;
         }
         
         .totals-card {
-            width: 300px;
-            border: 2px solid #333;
-            padding: 15px;
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            min-width: 300px;
+            text-align: right;
         }
         
-        .total-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            font-size: 12px;
+        .totals-table {
+            width: 100%;
+            border-collapse: collapse;
         }
         
-        .total-row.total-final {
-            border-top: 2px solid #333;
-            margin-top: 10px;
-            padding-top: 15px;
-            font-size: 16px;
-            font-weight: bold;
+        .totals-table tr {
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .totals-table tr:last-child {
+            border-bottom: none;
+        }
+        
+        .totals-table td {
+            padding: 10px 0;
         }
         
         .total-label {
-            font-weight: bold;
+            font-weight: 600;
+            color: #333;
+            font-size: 12px;
+            text-align: left;
         }
         
-        .status-badge {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: bold;
-            text-transform: uppercase;
+        .total-value {
+            font-weight: 600;
+            color: #333;
+            font-size: 12px;
+            text-align: right;
         }
         
-        .status-draft {
-            background: #e0e0e0;
+        .total-tax {
+            border-top: 1px solid #e0e0e0;
+            margin-top: 5px;
+            padding-top: 8px;
+        }
+        
+        .total-final {
+            border-top: 2px solid #333;
+            margin-top: 10px;
+            padding-top: 15px;
+        }
+        
+        .total-final .total-label,
+        .total-final .total-value {
+            font-size: 16px;
+            font-weight: 700;
+        }
+        
+        /* QR Code Section */
+        .qr-section {
+            text-align: center;
+        }
+        
+        .qr-section img {
+            width: 70px;
+            height: 70px;
+            display: block;
+            margin: 0 auto 5px;
+            border: 1px solid #ddd;
+        }
+        
+        .qr-section-label {
+            font-size: 9px;
             color: #666;
+            font-weight: bold;
         }
         
-        .status-sent {
-            background: #2196F3;
-            color: #fff;
+        /* Page breaks */
+        .items-section {
+            page-break-inside: avoid;
         }
         
-        .status-paid {
-            background: #4CAF50;
-            color: #fff;
+        .totals-section {
+            page-break-inside: avoid;
         }
         
-        .status-overdue {
-            background: #f44336;
-            color: #fff;
-        }
-        
-        .status-cancelled {
-            background: #9e9e9e;
-            color: #fff;
-        }
-        
-        @page {
-            margin: 0;
+        .businesses-section {
+            page-break-inside: avoid;
         }
     </style>
 </head>
@@ -204,132 +309,226 @@
     <div class="invoice-container">
         <!-- Invoice Header -->
         <div class="invoice-header">
-            <h1>FATURË</h1>
-            <div class="invoice-meta">
-                <div class="invoice-meta-item">
-                    <span class="invoice-meta-label">Numri i Faturës:</span>
-                    <span>{{ invoice.invoiceNumber }}</span>
-                </div>
-                <div class="invoice-meta-item">
-                    <span class="invoice-meta-label">Data:</span>
-                    <span>{{ invoice.invoiceDate ? invoice.invoiceDate.format('d.m.Y') : '' }}</span>
-                </div>
-                <div class="invoice-meta-item">
-                    <span class="invoice-meta-label">Statusi:</span>
-                    <span class="status-badge status-{{ invoice.status }}">{{ invoice.status }}</span>
-                </div>
-            </div>
-            <div class="invoice-meta" style="margin-top: 10px;">
-                <div class="invoice-meta-item">
-                    <span class="invoice-meta-label">Data e Maturimit:</span>
-                    <span>{{ invoice.dueDate ? invoice.dueDate.format('d.m.Y') : '' }}</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Businesses Section -->
-        <div class="businesses-section">
-            <div class="business-card">
-                <h3>Lëshuesi</h3>
-                <div class="business-info">
-                    <p><strong>Emri:</strong> {{ invoice.issuer.businessName }}</p>
-                    {% if invoice.issuer.fiscalNumber %}
-                    <p><strong>Numri Fiskal:</strong> {{ invoice.issuer.fiscalNumber }}</p>
-                    {% endif %}
-                    {% if invoice.issuer.address %}
-                    <p><strong>Adresa:</strong> {{ invoice.issuer.address }}</p>
-                    {% endif %}
-                    {% if invoice.issuer.municipality %}
-                    <p><strong>Komuna:</strong> {{ invoice.issuer.municipality }}</p>
-                    {% endif %}
-                    {% if invoice.issuer.email %}
-                    <p><strong>Email:</strong> {{ invoice.issuer.email }}</p>
-                    {% endif %}
-                    {% if invoice.issuer.phone %}
-                    <p><strong>Telefoni:</strong> {{ invoice.issuer.phone }}</p>
-                    {% endif %}
-                </div>
-            </div>
-            
-            <div class="business-card">
-                <h3>Marrësi</h3>
-                <div class="business-info">
-                    <p><strong>Emri:</strong> {{ invoice.receiver.businessName }}</p>
-                    {% if invoice.receiver.fiscalNumber %}
-                    <p><strong>Numri Fiskal:</strong> {{ invoice.receiver.fiscalNumber }}</p>
-                    {% endif %}
-                    {% if invoice.receiver.address %}
-                    <p><strong>Adresa:</strong> {{ invoice.receiver.address }}</p>
-                    {% endif %}
-                    {% if invoice.receiver.municipality %}
-                    <p><strong>Komuna:</strong> {{ invoice.receiver.municipality }}</p>
-                    {% endif %}
-                    {% if invoice.receiver.email %}
-                    <p><strong>Email:</strong> {{ invoice.receiver.email }}</p>
-                    {% endif %}
-                    {% if invoice.receiver.phone %}
-                    <p><strong>Telefoni:</strong> {{ invoice.receiver.phone }}</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <!-- Items Section -->
-        <div class="items-section">
-            <h2>Artikujt</h2>
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th style="width: 5%;">#</th>
-                        <th style="width: 35%;">Përshkrimi</th>
-                        <th style="width: 8%;" class="text-center">Sasia</th>
-                        <th style="width: 12%;" class="text-right">Çmimi për Njësi</th>
-                        <th style="width: 8%;" class="text-center">Tatimi</th>
-                        <th style="width: 12%;" class="text-right">Nëntotali</th>
-                        <th style="width: 10%;" class="text-right">Tatimi</th>
-                        <th style="width: 10%;" class="text-right">Totali</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% set items = invoice.items|sort((a, b) => a.sortOrder <=> b.sortOrder) %}
-                    {% for item in items %}
-                    <tr>
-                        <td class="text-center">{{ loop.index }}</td>
-                        <td>{{ item.description }}</td>
-                        <td class="text-center">{{ item.quantity|number_format(2, '.', '') }}</td>
-                        <td class="text-right">{{ item.unitPrice|number_format(2, '.', '') }} €</td>
-                        <td class="text-center">
-                            {% if item.tax %}
-                                {% if item.tax.rate is null %}
-                                    E përjashtuar
+            <table class="invoice-header-table">
+                <tr>
+                    <td>
+                        <h1>Fatura #{{ invoice.invoiceNumber }}</h1>
+                    </td>
+                    <td class="invoice-header-info">
+                        <div>
+                            <strong>Data e Faturës:</strong>
+                            <span>{{ invoice.invoiceDate ? invoice.invoiceDate.format('d.m.Y') : '' }}</span>
+                        </div>
+                        <div>
+                            <strong>Data e Maturimit:</strong>
+                            <span>{{ invoice.dueDate ? invoice.dueDate.format('d.m.Y') : '' }}</span>
+                        </div>
+                        <div>
+                            <strong>Statusi:</strong>
+                            <span class="status-badge status-{{ invoice.status }}">
+                                {% if invoice.status == 'draft' %}
+                                    Draft
+                                {% elseif invoice.status == 'sent' %}
+                                    Dërguar
+                                {% elseif invoice.status == 'paid' %}
+                                    Paguar
+                                {% elseif invoice.status == 'overdue' %}
+                                    Vonuar
+                                {% elseif invoice.status == 'cancelled' %}
+                                    Anuluar
                                 {% else %}
-                                    {{ item.tax.rate }}%
+                                    {{ invoice.status }}
                                 {% endif %}
-                            {% else %}
-                                E përjashtuar
-                            {% endif %}
-                        </td>
-                        <td class="text-right">{{ item.subtotal|number_format(2, '.', '') }} €</td>
-                        <td class="text-right">{{ item.taxAmount|number_format(2, '.', '') }} €</td>
-                        <td class="text-right"><strong>{{ item.total|number_format(2, '.', '') }} €</strong></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
+                            </span>
+                        </div>
+                    </td>
+                </tr>
             </table>
         </div>
         
-        <!-- Totals Section -->
-        <div class="totals-section">
-            <div class="totals-card">
-                <div class="total-row">
-                    <span class="total-label">Nëntotali:</span>
-                    <span>{{ invoice.subtotal|number_format(2, '.', '') }} €</span>
-                </div>
-                <div class="total-row total-final">
-                    <span class="total-label">Totali:</span>
-                    <span>{{ invoice.total|number_format(2, '.', '') }} €</span>
-                </div>
+        <!-- Issuer and Receiver -->
+        <div class="businesses-section">
+            <table class="businesses-table">
+                <tr>
+                    <td class="business-card">
+                        <h3>Lëshuesi</h3>
+                        <div class="business-details">
+                            <p><strong>Emri:</strong> {{ invoice.issuer.businessName }}</p>
+                            {% if invoice.issuer.tradeName %}
+                            <p><strong>Emri Tregtar:</strong> {{ invoice.issuer.tradeName }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.businessType %}
+                            <p><strong>Lloji i Biznesit:</strong> {{ invoice.issuer.businessType }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.uniqueIdentifierNumber %}
+                            <p><strong>Numri Unik:</strong> {{ invoice.issuer.uniqueIdentifierNumber }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.businessNumber %}
+                            <p><strong>Numri i Biznesit:</strong> {{ invoice.issuer.businessNumber }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.fiscalNumber %}
+                            <p><strong>Numri Fiskal:</strong> {{ invoice.issuer.fiscalNumber }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.numberOfEmployees %}
+                            <p><strong>Numri i Punëtorëve:</strong> {{ invoice.issuer.numberOfEmployees }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.registrationDate %}
+                            <p><strong>Data e Regjistrimit:</strong> {{ invoice.issuer.registrationDate.format('d.m.Y') }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.municipality %}
+                            <p><strong>Komuna:</strong> {{ invoice.issuer.municipality }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.address %}
+                            <p><strong>Adresa:</strong> {{ invoice.issuer.address }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.phone %}
+                            <p><strong>Telefoni:</strong> {{ invoice.issuer.phone }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.email %}
+                            <p><strong>Email:</strong> {{ invoice.issuer.email }}</p>
+                            {% endif %}
+                            {% if invoice.issuer.capital %}
+                            <p><strong>Kapitali:</strong> {{ invoice.issuer.capital|number_format(2, '.', '') }} €</p>
+                            {% endif %}
+                            {% if invoice.issuer.arbkStatus %}
+                            <p><strong>Statusi ARBK:</strong> {{ invoice.issuer.arbkStatus }}</p>
+                            {% endif %}
+                        </div>
+                    </td>
+                    <td class="business-card">
+                        <h3>Marrësi</h3>
+                        <div class="business-details">
+                            <p><strong>Emri:</strong> {{ invoice.receiver.businessName }}</p>
+                            {% if invoice.receiver.tradeName %}
+                            <p><strong>Emri Tregtar:</strong> {{ invoice.receiver.tradeName }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.businessType %}
+                            <p><strong>Lloji i Biznesit:</strong> {{ invoice.receiver.businessType }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.uniqueIdentifierNumber %}
+                            <p><strong>Numri Unik:</strong> {{ invoice.receiver.uniqueIdentifierNumber }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.businessNumber %}
+                            <p><strong>Numri i Biznesit:</strong> {{ invoice.receiver.businessNumber }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.fiscalNumber %}
+                            <p><strong>Numri Fiskal:</strong> {{ invoice.receiver.fiscalNumber }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.numberOfEmployees %}
+                            <p><strong>Numri i Punëtorëve:</strong> {{ invoice.receiver.numberOfEmployees }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.registrationDate %}
+                            <p><strong>Data e Regjistrimit:</strong> {{ invoice.receiver.registrationDate.format('d.m.Y') }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.municipality %}
+                            <p><strong>Komuna:</strong> {{ invoice.receiver.municipality }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.address %}
+                            <p><strong>Adresa:</strong> {{ invoice.receiver.address }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.phone %}
+                            <p><strong>Telefoni:</strong> {{ invoice.receiver.phone }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.email %}
+                            <p><strong>Email:</strong> {{ invoice.receiver.email }}</p>
+                            {% endif %}
+                            {% if invoice.receiver.capital %}
+                            <p><strong>Kapitali:</strong> {{ invoice.receiver.capital|number_format(2, '.', '') }} €</p>
+                            {% endif %}
+                            {% if invoice.receiver.arbkStatus %}
+                            <p><strong>Statusi ARBK:</strong> {{ invoice.receiver.arbkStatus }}</p>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Invoice Items -->
+        <div class="items-section">
+            <h2>Artikujt</h2>
+            {% if invoice.items and invoice.items|length > 0 %}
+            <div class="items-table-container">
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 30%;">Përshkrimi</th>
+                            <th style="width: 8%;" class="text-center">Sasia</th>
+                            <th style="width: 12%;" class="text-right">Çmimi për Njësi</th>
+                            <th style="width: 8%;" class="text-center">Tatimi</th>
+                            <th style="width: 12%;" class="text-right">Nëntotali</th>
+                            <th style="width: 10%;" class="text-right">Tatimi</th>
+                            <th style="width: 13%;" class="text-right">Totali</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% set items = invoice.items|sort((a, b) => a.sortOrder <=> b.sortOrder) %}
+                        {% for item in items %}
+                        <tr>
+                            <td class="text-center">{{ loop.index }}</td>
+                            <td class="description">{{ item.description }}</td>
+                            <td class="text-center">{{ item.quantity|number_format(2, '.', '') }}</td>
+                            <td class="text-right">{{ item.unitPrice|number_format(2, '.', '') }} €</td>
+                            <td class="text-center">
+                                {% if item.tax %}
+                                    {% if item.tax.rate is null %}
+                                        <span class="tax-exempt">E përjashtuar</span>
+                                    {% else %}
+                                        {{ item.tax.rate }}%
+                                    {% endif %}
+                                {% else %}
+                                    <span class="tax-exempt">E përjashtuar</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-right">{{ item.subtotal|number_format(2, '.', '') }} €</td>
+                            <td class="text-right">{{ item.taxAmount|number_format(2, '.', '') }} €</td>
+                            <td class="text-right"><strong>{{ item.total|number_format(2, '.', '') }} €</strong></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
+            {% else %}
+            <p style="text-align: center; padding: 20px; color: #666;">Nuk ka artikuj në këtë faturë.</p>
+            {% endif %}
+        </div>
+        
+        <!-- Totals and QR Code -->
+        <div class="totals-section">
+            <table class="totals-wrapper">
+                <tr>
+                    {% if qrCodeBase64 %}
+                    <td class="qr-wrapper">
+                        <div class="qr-section">
+                            <img src="data:image/png;base64,{{ qrCodeBase64 }}" alt="QR Code" />
+                            <div class="qr-section-label">Skano për të parë online</div>
+                        </div>
+                    </td>
+                    {% endif %}
+                    <td>
+                        <div class="totals-card">
+                            <table class="totals-table">
+                                <tr>
+                                    <td class="total-label">Nëntotali:</td>
+                                    <td class="total-value">{{ invoice.subtotal|number_format(2, '.', '') }} €</td>
+                                </tr>
+                                <tr class="total-tax">
+                                    <td class="total-label">Tatimi Total:</td>
+                                    <td class="total-value">
+                                        {% set taxTotal = invoice.total - invoice.subtotal %}
+                                        {{ taxTotal|number_format(2, '.', '') }} €
+                                    </td>
+                                </tr>
+                                <tr class="total-final">
+                                    <td class="total-label">Totali:</td>
+                                    <td class="total-value">{{ invoice.total|number_format(2, '.', '') }} €</td>
+                                </tr>
+                            </table>
+                        </div>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
 </body>
