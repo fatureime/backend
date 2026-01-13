@@ -172,12 +172,17 @@
         }
         
         .items-table th {
-            padding: 12px;
-            text-align: left;
+            padding: 0;
+            text-align: center !important;
             font-weight: 600;
             color: #333;
             border-bottom: 2px solid #e0e0e0;
             font-size: 11px;
+        }
+        
+        .items-table thead .text-right,
+        .items-table thead .text-center {
+            text-align: center !important;
         }
         
         .items-table tbody tr {
@@ -433,9 +438,9 @@
                             <th style="width: 30%;">Përshkrimi</th>
                             <th style="width: 8%;" class="text-center">Sasia</th>
                             <th style="width: 12%;" class="text-right">Çmimi për Njësi</th>
-                            <th style="width: 8%;" class="text-center">Tatimi</th>
-                            <th style="width: 12%;" class="text-right">Nëntotali</th>
-                            <th style="width: 10%;" class="text-right">Tatimi</th>
+                            <th style="width: 8%;" class="text-center">Vlera e TVSH</th>
+                            <th style="width: 12%;" class="text-right">Vlera pa TVSH</th>
+                            <th style="width: 10%;" class="text-right">Vlera e TVSH</th>
                             <th style="width: 13%;" class="text-right">Totali</th>
                         </tr>
                     </thead>
