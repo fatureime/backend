@@ -78,6 +78,9 @@ class Business
     #[ORM\OneToMany(targetEntity: Article::class, mappedBy: 'business', cascade: ['persist', 'remove'])]
     private $articles;
 
+    #[ORM\OneToMany(targetEntity: BankAccount::class, mappedBy: 'business', cascade: ['persist', 'remove'])]
+    private $bankAccounts;
+
     #[ORM\OneToMany(targetEntity: Invoice::class, mappedBy: 'issuer')]
     private $invoicesAsIssuer;
 
@@ -93,6 +96,7 @@ class Business
     public function __construct()
     {
         $this->articles = new \Doctrine\Common\Collections\ArrayCollection();
+        $this->bankAccounts = new \Doctrine\Common\Collections\ArrayCollection();
         $this->invoicesAsIssuer = new \Doctrine\Common\Collections\ArrayCollection();
         $this->invoicesAsReceiver = new \Doctrine\Common\Collections\ArrayCollection();
     }
@@ -342,6 +346,36 @@ class Business
             // set the owning side to null (unless already changed)
             if ($article->getBusiness() === $this) {
                 $article->setBusiness(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return \Doctrine\Common\Collections\Collection<int, BankAccount>
+     */
+    public function getBankAccounts(): \Doctrine\Common\Collections\Collection
+    {
+        return $this->bankAccounts;
+    }
+
+    public function addBankAccount(BankAccount $bankAccount): static
+    {
+        if (!$this->bankAccounts->contains($bankAccount)) {
+            $this->bankAccounts->add($bankAccount);
+            $bankAccount->setBusiness($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBankAccount(BankAccount $bankAccount): static
+    {
+        if ($this->bankAccounts->removeElement($bankAccount)) {
+            // set the owning side to null (unless already changed)
+            if ($bankAccount->getBusiness() === $this) {
+                $bankAccount->setBusiness(null);
             }
         }
 
