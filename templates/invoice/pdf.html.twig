@@ -407,6 +407,36 @@
         .businesses-section {
             page-break-inside: avoid;
         }
+        
+        /* Signature Section */
+        .signature-section {
+            position: fixed;
+            bottom: 30mm;
+            left: 20mm;
+            right: 20mm;
+            margin-top: 40px;
+            padding-bottom: 10px;
+        }
+        
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .signature-cell {
+            width: 50%;
+            vertical-align: top;
+            padding: 0 20px;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #333;
+            margin-top: 50px;
+            padding-top: 5px;
+            font-size: 10px;
+            color: #333;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -599,6 +629,24 @@
                                     <td class="total-value">{{ invoice.total|number_format(2, '.', '') }} €</td>
                                 </tr>
                             </table>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Signature Section -->
+        <div class="signature-section">
+            <table class="signature-table">
+                <tr>
+                    <td class="signature-cell">
+                        <div class="signature-line">
+                            {{ invoice.issuer.businessName }}
+                        </div>
+                    </td>
+                    <td class="signature-cell">
+                        <div class="signature-line">
+                            {{ invoice.receiver.businessName }}
                         </div>
                     </td>
                 </tr>
