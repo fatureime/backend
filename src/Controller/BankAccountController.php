@@ -133,14 +133,10 @@ class BankAccountController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        // Validate that at least one of swift, iban, or bank_account_number is provided
-        $swift = isset($data['swift']) ? trim($data['swift']) : null;
-        $iban = isset($data['iban']) ? trim($data['iban']) : null;
-        $bankAccountNumber = isset($data['bank_account_number']) ? trim($data['bank_account_number']) : null;
-
-        if (empty($swift) && empty($iban) && empty($bankAccountNumber)) {
+        // Validate that bank_account_number is provided
+        if (!isset($data['bank_account_number']) || empty(trim($data['bank_account_number']))) {
             return new JsonResponse(
-                ['error' => 'At least one of SWIFT, IBAN, or bank account number is required'],
+                ['error' => 'Bank account number is required'],
                 Response::HTTP_BAD_REQUEST
             );
         }
@@ -148,17 +144,15 @@ class BankAccountController extends AbstractController
         // Create new bank account
         $bankAccount = new BankAccount();
         $bankAccount->setBusiness($business);
+        $bankAccount->setBankAccountNumber(trim($data['bank_account_number']));
 
-        if (isset($data['swift'])) {
+        if (isset($data['swift']) && !empty(trim($data['swift']))) {
             $bankAccount->setSwift($data['swift']);
         }
-        if (isset($data['iban'])) {
+        if (isset($data['iban']) && !empty(trim($data['iban']))) {
             $bankAccount->setIban($data['iban']);
         }
-        if (isset($data['bank_account_number'])) {
-            $bankAccount->setBankAccountNumber($data['bank_account_number']);
-        }
-        if (isset($data['bank_name'])) {
+        if (isset($data['bank_name']) && !empty(trim($data['bank_name']))) {
             $bankAccount->setBankName($data['bank_name']);
         }
 
@@ -223,26 +217,34 @@ class BankAccountController extends AbstractController
 
         $data = json_decode($request->getContent(), true);
 
-        // Update fields if provided
+        // Validate that bank_account_number is provided
+        if (isset($data['bank_account_number'])) {
+            if (empty(trim($data['bank_account_number']))) {
+                return new JsonResponse(
+                    ['error' => 'Bank account number is required'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            $bankAccount->setBankAccountNumber(trim($data['bank_account_number']));
+        } else {
+            // If not provided in update, ensure existing value is not empty
+            if (empty($bankAccount->getBankAccountNumber())) {
+                return new JsonResponse(
+                    ['error' => 'Bank account number is required'],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+        }
+
+        // Update optional fields if provided
         if (isset($data['swift'])) {
             $bankAccount->setSwift($data['swift']);
         }
         if (isset($data['iban'])) {
             $bankAccount->setIban($data['iban']);
         }
-        if (isset($data['bank_account_number'])) {
-            $bankAccount->setBankAccountNumber($data['bank_account_number']);
-        }
         if (isset($data['bank_name'])) {
             $bankAccount->setBankName($data['bank_name']);
-        }
-
-        // Validate that at least one of swift, iban, or bank_account_number is still present
-        if (empty($bankAccount->getSwift()) && empty($bankAccount->getIban()) && empty($bankAccount->getBankAccountNumber())) {
-            return new JsonResponse(
-                ['error' => 'At least one of SWIFT, IBAN, or bank account number is required'],
-                Response::HTTP_BAD_REQUEST
-            );
         }
 
         // Validate entity

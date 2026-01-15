@@ -29,7 +29,8 @@ class BankAccount
     #[Assert\Length(max: 34, maxMessage: 'IBAN must be at most 34 characters')]
     private ?string $iban = null;
 
-    #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
+    #[ORM\Column(type: Types::STRING, length: 255)]
+    #[Assert\NotBlank(message: 'Bank account number is required')]
     private ?string $bankAccountNumber = null;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
@@ -87,9 +88,9 @@ class BankAccount
         return $this->bankAccountNumber;
     }
 
-    public function setBankAccountNumber(?string $bankAccountNumber): static
+    public function setBankAccountNumber(string $bankAccountNumber): static
     {
-        $this->bankAccountNumber = $bankAccountNumber ? trim($bankAccountNumber) : null;
+        $this->bankAccountNumber = trim($bankAccountNumber);
 
         return $this;
     }
