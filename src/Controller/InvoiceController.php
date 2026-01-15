@@ -13,6 +13,7 @@ use App\Repository\BusinessRepository;
 use App\Repository\InvoiceItemRepository;
 use App\Repository\InvoiceRepository;
 use App\Repository\TaxRepository;
+use App\Service\InvoiceExcelService;
 use App\Service\InvoicePdfService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
@@ -35,7 +36,8 @@ class InvoiceController extends AbstractController
         private TaxRepository $taxRepository,
         private ValidatorInterface $validator,
         private LoggerInterface $logger,
-        private InvoicePdfService $pdfService
+        private InvoicePdfService $pdfService,
+        private InvoiceExcelService $excelService
     ) {
     }
 
@@ -602,6 +604,105 @@ class InvoiceController extends AbstractController
 
         // Generate and return PDF
         return $this->pdfService->generatePdf($invoice);
+    }
+
+    /**
+     * Export invoices as Excel (for a business)
+     */
+    #[Route('/api/businesses/{businessId}/invoices/export/excel', name: 'app_invoices_export_excel', methods: ['GET', 'OPTIONS'])]
+    #[IsGranted('ROLE_USER')]
+    public function exportExcel(int $businessId, Request $request): Response
+    {
+        if ($request->getMethod() === 'OPTIONS') {
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $this->ensureUserIsActive($user);
+
+        $business = $this->businessRepository->find($businessId);
+
+        if (!$business) {
+            return new JsonResponse(
+                ['error' => 'Business not found'],
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        // Check if user can access this business
+        $this->ensureUserCanAccessBusiness($user, $business);
+
+        // Get status filter from query parameter
+        $statusFilter = $request->query->get('status');
+
+        // Get invoices for the business
+        $invoices = $this->invoiceRepository->findByIssuerBusiness($business);
+
+        // Apply status filter if provided
+        if ($statusFilter && in_array($statusFilter, ['draft', 'sent', 'paid', 'overdue', 'cancelled'])) {
+            $invoices = array_filter($invoices, function (Invoice $invoice) use ($statusFilter) {
+                return $invoice->getStatus() === $statusFilter;
+            });
+        }
+
+        // Generate and return Excel
+        return $this->excelService->generateExcel(array_values($invoices));
+    }
+
+    /**
+     * Export all invoices as Excel (admin tenants only)
+     */
+    #[Route('/api/invoices/export/excel', name: 'app_invoices_export_excel_all', methods: ['GET', 'OPTIONS'])]
+    #[IsGranted('ROLE_USER')]
+    public function exportExcelAll(Request $request): Response
+    {
+        if ($request->getMethod() === 'OPTIONS') {
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $this->ensureUserIsActive($user);
+
+        // Only admin tenants can access all invoices
+        if (!$user->getTenant() || !$user->getTenant()->isAdminTenant()) {
+            return new JsonResponse(
+                ['error' => 'Access denied. Only admin tenants can export all invoices.'],
+                Response::HTTP_FORBIDDEN
+            );
+        }
+
+        // Get optional filters from query parameters
+        $statusFilter = $request->query->get('status');
+        $businessIdFilter = $request->query->get('businessId');
+
+        // Build query
+        $qb = $this->invoiceRepository->createQueryBuilder('i');
+
+        // Apply business filter if provided
+        if ($businessIdFilter && is_numeric($businessIdFilter)) {
+            $business = $this->businessRepository->find((int) $businessIdFilter);
+            if ($business) {
+                $qb->andWhere('i.issuer = :business')
+                   ->setParameter('business', $business);
+            }
+        }
+
+        // Apply status filter if provided
+        if ($statusFilter && in_array($statusFilter, ['draft', 'sent', 'paid', 'overdue', 'cancelled'])) {
+            $qb->andWhere('i.status = :status')
+               ->setParameter('status', $statusFilter);
+        }
+
+        $qb->orderBy('i.createdAt', 'DESC');
+
+        $invoices = $qb->getQuery()->getResult();
+
+        // Generate and return Excel
+        return $this->excelService->generateExcel($invoices);
     }
 
     /**
