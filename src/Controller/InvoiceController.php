@@ -43,33 +43,6 @@ class InvoiceController extends AbstractController
     ) {
     }
 
-    /**
-     * Get all invoice statuses
-     */
-    #[Route('/api/invoice-statuses', name: 'app_invoice_statuses', methods: ['GET', 'OPTIONS'])]
-    #[IsGranted('ROLE_USER')]
-    public function getInvoiceStatuses(Request $request): JsonResponse
-    {
-        if ($request->getMethod() === 'OPTIONS') {
-            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
-        }
-
-        /** @var User $user */
-        $user = $this->getUser();
-        
-        $this->ensureUserIsActive($user);
-
-        $statuses = $this->invoiceStatusRepository->findAllOrderedByCode();
-        
-        $data = array_map(function ($status) {
-            return [
-                'id' => $status->getId(),
-                'code' => $status->getCode(),
-            ];
-        }, $statuses);
-
-        return new JsonResponse($data, Response::HTTP_OK);
-    }
 
     /**
      * Get all invoices (admin tenants only)
