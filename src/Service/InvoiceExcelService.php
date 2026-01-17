@@ -82,7 +82,8 @@ class InvoiceExcelService
                 'overdue' => 'Vonuar',
                 'cancelled' => 'Anuluar',
             ];
-            $statusLabel = $statusLabels[$invoice->getStatus()] ?? $invoice->getStatus();
+            $statusCode = $invoice->getStatusCode() ?? '';
+            $statusLabel = $statusLabels[$statusCode] ?? $statusCode;
 
             $sheet->setCellValue('A' . $row, $invoice->getInvoiceNumber());
             $sheet->setCellValue('B' . $row, $invoiceDate);

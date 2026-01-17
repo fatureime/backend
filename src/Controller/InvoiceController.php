@@ -12,6 +12,7 @@ use App\Repository\ArticleRepository;
 use App\Repository\BusinessRepository;
 use App\Repository\InvoiceItemRepository;
 use App\Repository\InvoiceRepository;
+use App\Repository\InvoiceStatusRepository;
 use App\Repository\TaxRepository;
 use App\Service\InvoiceExcelService;
 use App\Service\InvoicePdfService;
@@ -34,11 +35,40 @@ class InvoiceController extends AbstractController
         private BusinessRepository $businessRepository,
         private ArticleRepository $articleRepository,
         private TaxRepository $taxRepository,
+        private InvoiceStatusRepository $invoiceStatusRepository,
         private ValidatorInterface $validator,
         private LoggerInterface $logger,
         private InvoicePdfService $pdfService,
         private InvoiceExcelService $excelService
     ) {
+    }
+
+    /**
+     * Get all invoice statuses
+     */
+    #[Route('/api/invoice-statuses', name: 'app_invoice_statuses', methods: ['GET', 'OPTIONS'])]
+    #[IsGranted('ROLE_USER')]
+    public function getInvoiceStatuses(Request $request): JsonResponse
+    {
+        if ($request->getMethod() === 'OPTIONS') {
+            return new JsonResponse(null, Response::HTTP_NO_CONTENT);
+        }
+
+        /** @var User $user */
+        $user = $this->getUser();
+        
+        $this->ensureUserIsActive($user);
+
+        $statuses = $this->invoiceStatusRepository->findAllOrderedByCode();
+        
+        $data = array_map(function ($status) {
+            return [
+                'id' => $status->getId(),
+                'code' => $status->getCode(),
+            ];
+        }, $statuses);
+
+        return new JsonResponse($data, Response::HTTP_OK);
     }
 
     /**
@@ -275,9 +305,16 @@ class InvoiceController extends AbstractController
             );
         }
 
-        if (isset($data['status'])) {
-            $invoice->setStatus($data['status']);
+        // Handle status - default to 'draft' if not provided
+        $statusCode = $data['status'] ?? 'draft';
+        $invoiceStatus = $this->invoiceStatusRepository->findByCode($statusCode);
+        if (!$invoiceStatus) {
+            return new JsonResponse(
+                ['error' => 'Invalid invoice status: ' . $statusCode],
+                Response::HTTP_BAD_REQUEST
+            );
         }
+        $invoice->setStatus($invoiceStatus);
 
         // Validate invoice
         $errors = $this->validator->validate($invoice);
@@ -442,7 +479,14 @@ class InvoiceController extends AbstractController
         }
 
         if (isset($data['status'])) {
-            $invoice->setStatus($data['status']);
+            $invoiceStatus = $this->invoiceStatusRepository->findByCode($data['status']);
+            if (!$invoiceStatus) {
+                return new JsonResponse(
+                    ['error' => 'Invalid invoice status: ' . $data['status']],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+            $invoice->setStatus($invoiceStatus);
         }
 
         // Handle items update
@@ -643,7 +687,7 @@ class InvoiceController extends AbstractController
         // Apply status filter if provided
         if ($statusFilter && in_array($statusFilter, ['draft', 'sent', 'paid', 'overdue', 'cancelled'])) {
             $invoices = array_filter($invoices, function (Invoice $invoice) use ($statusFilter) {
-                return $invoice->getStatus() === $statusFilter;
+                return $invoice->getStatusCode() === $statusFilter;
             });
         }
 
@@ -693,8 +737,11 @@ class InvoiceController extends AbstractController
 
         // Apply status filter if provided
         if ($statusFilter && in_array($statusFilter, ['draft', 'sent', 'paid', 'overdue', 'cancelled'])) {
-            $qb->andWhere('i.status = :status')
-               ->setParameter('status', $statusFilter);
+            $statusEntity = $this->invoiceStatusRepository->findByCode($statusFilter);
+            if ($statusEntity) {
+                $qb->andWhere('i.status = :status')
+                   ->setParameter('status', $statusEntity);
+            }
         }
 
         $qb->orderBy('i.createdAt', 'DESC');
@@ -824,7 +871,7 @@ class InvoiceController extends AbstractController
             'invoice_number' => $invoice->getInvoiceNumber(),
             'invoice_date' => $invoice->getInvoiceDate()?->format('Y-m-d'),
             'due_date' => $invoice->getDueDate()?->format('Y-m-d'),
-            'status' => $invoice->getStatus(),
+            'status' => $invoice->getStatusCode(),
             'subtotal' => $invoice->getSubtotal(),
             'total' => $invoice->getTotal(),
             'issuer_id' => $issuer?->getId(),

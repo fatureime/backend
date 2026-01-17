@@ -38,10 +38,10 @@ class Invoice
     #[Assert\NotBlank(message: 'Due date is required')]
     private ?\DateTimeImmutable $dueDate = null;
 
-    #[ORM\Column(type: Types::STRING, length: 50)]
-    #[Assert\NotBlank(message: 'Status is required')]
-    #[Assert\Choice(choices: ['draft', 'sent', 'paid', 'overdue', 'cancelled'], message: 'Invalid invoice status')]
-    private ?string $status = 'draft';
+    #[ORM\ManyToOne(targetEntity: InvoiceStatus::class)]
+    #[ORM\JoinColumn(name: 'status_id', referencedColumnName: 'id', nullable: false)]
+    #[Assert\NotNull(message: 'Status is required')]
+    private ?InvoiceStatus $status = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $subtotal = '0.00';
@@ -128,16 +128,24 @@ class Invoice
         return $this;
     }
 
-    public function getStatus(): ?string
+    public function getStatus(): ?InvoiceStatus
     {
         return $this->status;
     }
 
-    public function setStatus(string $status): static
+    public function setStatus(InvoiceStatus $status): static
     {
         $this->status = $status;
 
         return $this;
+    }
+
+    /**
+     * Get status code as string (for API compatibility)
+     */
+    public function getStatusCode(): ?string
+    {
+        return $this->status?->getCode();
     }
 
     public function getSubtotal(): ?string
