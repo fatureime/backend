@@ -74,8 +74,8 @@ class InvoiceController extends AbstractController
             ->getQuery()
             ->getResult();
 
-        $data = array_map(function (Invoice $invoice) {
-            return $this->serializeInvoice($invoice);
+        $data = array_map(function (Invoice $invoice) use ($request) {
+            return $this->serializeInvoice($invoice, $request);
         }, $invoices);
 
         return new JsonResponse($data, Response::HTTP_OK);
@@ -111,8 +111,8 @@ class InvoiceController extends AbstractController
 
         $invoices = $this->invoiceRepository->findByIssuerBusiness($business);
 
-        $data = array_map(function (Invoice $invoice) {
-            return $this->serializeInvoice($invoice);
+        $data = array_map(function (Invoice $invoice) use ($request) {
+            return $this->serializeInvoice($invoice, $request);
         }, $invoices);
 
         return new JsonResponse($data, Response::HTTP_OK);
@@ -185,7 +185,7 @@ class InvoiceController extends AbstractController
             }
         }
 
-        return new JsonResponse($this->serializeInvoice($invoice), Response::HTTP_OK);
+        return new JsonResponse($this->serializeInvoice($invoice, $request), Response::HTTP_OK);
     }
 
     /**
@@ -321,7 +321,7 @@ class InvoiceController extends AbstractController
         $this->entityManager->flush();
 
         return new JsonResponse(
-            $this->serializeInvoice($invoice),
+            $this->serializeInvoice($invoice, $request),
             Response::HTTP_CREATED
         );
     }
@@ -499,7 +499,7 @@ class InvoiceController extends AbstractController
         $invoice->calculateTotals();
         $this->entityManager->flush();
 
-        return new JsonResponse($this->serializeInvoice($invoice), Response::HTTP_OK);
+        return new JsonResponse($this->serializeInvoice($invoice, $request), Response::HTTP_OK);
     }
 
     /**
@@ -833,7 +833,7 @@ class InvoiceController extends AbstractController
     /**
      * Serialize invoice to array
      */
-    private function serializeInvoice(Invoice $invoice): array
+    private function serializeInvoice(Invoice $invoice, ?Request $request = null): array
     {
         $issuer = $invoice->getIssuer();
         $receiver = $invoice->getReceiver();
@@ -851,18 +851,54 @@ class InvoiceController extends AbstractController
             'receiver_id' => $receiver?->getId(),
             'created_at' => $invoice->getCreatedAt()?->format('c'),
             'updated_at' => $invoice->getUpdatedAt()?->format('c'),
-            'issuer' => $issuer ? [
-                'id' => $issuer->getId(),
-                'business_name' => $issuer->getBusinessName(),
-            ] : null,
-            'receiver' => $receiver ? [
-                'id' => $receiver->getId(),
-                'business_name' => $receiver->getBusinessName(),
-            ] : null,
+            'issuer' => $issuer ? $this->serializeBusinessForInvoice($issuer, $request) : null,
+            'receiver' => $receiver ? $this->serializeBusinessForInvoice($receiver, $request) : null,
             'items' => array_map(function (InvoiceItem $item) {
                 return $this->serializeInvoiceItem($item);
             }, $items),
         ];
+    }
+
+    /**
+     * Serialize business for invoice (includes all fields needed for PDF)
+     */
+    private function serializeBusinessForInvoice(Business $business, ?Request $request = null): array
+    {
+        $logoUrl = null;
+        if ($business->getLogo()) {
+            $logoUrl = $this->getLogoUrl($business->getLogo(), $request);
+        }
+
+        return [
+            'id' => $business->getId(),
+            'business_name' => $business->getBusinessName(),
+            'trade_name' => $business->getTradeName(),
+            'business_type' => $business->getBusinessType(),
+            'unique_identifier_number' => $business->getUniqueIdentifierNumber(),
+            'vat_number' => $business->getVatNumber(),
+            'municipality' => $business->getMunicipality(),
+            'address' => $business->getAddress(),
+            'phone' => $business->getPhone(),
+            'email' => $business->getEmail(),
+            'logo' => $logoUrl,
+        ];
+    }
+
+    /**
+     * Get logo URL for business
+     */
+    private function getLogoUrl(?string $logoPath, ?Request $request = null): ?string
+    {
+        if (!$logoPath) {
+            return null;
+        }
+
+        if ($request) {
+            $baseUrl = $request->getSchemeAndHttpHost();
+            return $baseUrl . '/uploads/logos/' . basename($logoPath);
+        }
+
+        return '/uploads/logos/' . basename($logoPath);
     }
 
     /**
