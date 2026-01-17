@@ -108,10 +108,10 @@ class TaxController extends AbstractController
 
         $rate = $data['rate'] === null ? null : (float) $data['rate'];
         
-        // Validate rate value (must be null, 0, 8, or 19)
-        if ($rate !== null && !in_array($rate, [0, 8, 19], true)) {
+        // Validate rate value (must be non-negative if provided)
+        if ($rate !== null && $rate < 0) {
             return new JsonResponse(
-                ['error' => 'Tax rate must be null (exempted), 0, 8, or 19'],
+                ['error' => 'Tax rate must be greater than or equal to 0'],
                 Response::HTTP_BAD_REQUEST
             );
         }
@@ -193,10 +193,10 @@ class TaxController extends AbstractController
         if (isset($data['rate'])) {
             $rate = $data['rate'] === null ? null : (float) $data['rate'];
             
-            // Validate rate value
-            if ($rate !== null && !in_array($rate, [0, 8, 19], true)) {
+            // Validate rate value (must be non-negative if provided)
+            if ($rate !== null && $rate < 0) {
                 return new JsonResponse(
-                    ['error' => 'Tax rate must be null (exempted), 0, 8, or 19'],
+                    ['error' => 'Tax rate must be greater than or equal to 0'],
                     Response::HTTP_BAD_REQUEST
                 );
             }

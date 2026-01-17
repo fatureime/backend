@@ -19,7 +19,7 @@ class Tax
     private ?int $id = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 5, scale: 2, nullable: true, unique: true)]
-    #[Assert\Choice(choices: [null, 0, 8, 19], message: 'Tax rate must be null (exempted), 0, 8, or 19')]
+    #[Assert\GreaterThanOrEqual(value: 0, message: 'Tax rate must be greater than or equal to 0')]
     private ?string $rate = null;
 
     #[ORM\Column(type: Types::STRING, length: 255, nullable: true)]
