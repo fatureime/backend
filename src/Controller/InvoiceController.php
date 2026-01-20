@@ -785,6 +785,13 @@ class InvoiceController extends AbstractController
         if (isset($itemData['article_id']) && is_numeric($itemData['article_id'])) {
             $article = $this->articleRepository->find((int) $itemData['article_id']);
             if ($article) {
+                // Validate that the article belongs to the invoice's issuer business
+                if ($article->getBusiness() !== $invoice->getIssuer()) {
+                    return new JsonResponse(
+                        ['error' => 'Article must belong to the invoice issuer business'],
+                        Response::HTTP_BAD_REQUEST
+                    );
+                }
                 $item->setArticle($article);
             }
         }
