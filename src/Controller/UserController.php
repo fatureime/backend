@@ -176,7 +176,9 @@ class UserController extends AbstractController
                 );
             }
             // Check if current user can assign to this tenant
-            if (!$this->canUserManageTenant($currentUser, $tenant)) {
+            // Admin users from admin tenants can create users for any tenant
+            // Non-admin users from admin tenants can only create users for their own tenant
+            if (!$this->canUserWriteToTenant($currentUser, $tenant)) {
                 return new JsonResponse(
                     ['error' => 'You do not have permission to create users for this tenant'],
                     Response::HTTP_FORBIDDEN
@@ -278,7 +280,9 @@ class UserController extends AbstractController
                 );
             }
             // Check if current user can assign to this tenant
-            if (!$this->canUserManageTenant($currentUser, $tenant)) {
+            // Admin users from admin tenants can invite users for any tenant
+            // Non-admin users from admin tenants can only invite users for their own tenant
+            if (!$this->canUserWriteToTenant($currentUser, $tenant)) {
                 return new JsonResponse(
                     ['error' => 'You do not have permission to invite users for this tenant'],
                     Response::HTTP_FORBIDDEN
@@ -569,7 +573,8 @@ class UserController extends AbstractController
 
     /**
      * Ensure user can manage another user
-     * - Admin tenant users can manage any user
+     * - Admin users from admin tenants can manage any user
+     * - Non-admin users from admin tenants can only manage users from their own tenant
      * - Regular admin users can only manage users from their tenant
      */
     private function ensureUserCanManageUser(User $currentUser, User $targetUser): void
@@ -577,29 +582,54 @@ class UserController extends AbstractController
         $this->ensureUserIsActive($currentUser);
         $this->ensureUserIsAdmin($currentUser);
 
-        // Admin tenant users can manage any user
-        if ($currentUser->getTenant() && $currentUser->getTenant()->isAdminTenant()) {
-            return;
-        }
-
-        // Regular admin users can only manage users from their tenant
-        if ($currentUser->getTenant() !== $targetUser->getTenant()) {
-            throw $this->createAccessDeniedException('You do not have permission to manage this user');
-        }
+        // Check if user can write to the target user's tenant
+        $this->ensureUserCanWriteToTenant($currentUser, $targetUser->getTenant());
     }
 
     /**
      * Check if user can manage a tenant
+     * @deprecated Use canUserWriteToTenant instead
      */
     private function canUserManageTenant(User $user, Tenant $tenant): bool
     {
-        // Admin tenant users can manage any tenant
-        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
-            return true;
+        return $this->canUserWriteToTenant($user, $tenant);
+    }
+
+    /**
+     * Check if user can read all entities (admin tenant)
+     */
+    private function canUserReadAll(User $user): bool
+    {
+        return $user->getTenant() && $user->getTenant()->isAdminTenant();
+    }
+
+    /**
+     * Check if user can write to a specific tenant
+     */
+    private function canUserWriteToTenant(User $user, ?Tenant $targetTenant): bool
+    {
+        if (!$targetTenant) {
+            return false;
         }
 
-        // Regular admin users can only manage their own tenant
-        return $user->getTenant() === $tenant;
+        // Admin users from admin tenants can write to any tenant
+        if ($this->canUserReadAll($user) && in_array('ROLE_ADMIN', $user->getRoles())) {
+            return true;
+        }
+        
+        // Non-admin users from admin tenants can only write to their own tenant
+        // Regular tenants can only write to their own tenant
+        return $user->getTenant() === $targetTenant;
+    }
+
+    /**
+     * Ensure user can write to a specific tenant (throws exception if not)
+     */
+    private function ensureUserCanWriteToTenant(User $user, ?Tenant $targetTenant): void
+    {
+        if (!$this->canUserWriteToTenant($user, $targetTenant)) {
+            throw $this->createAccessDeniedException('You do not have permission to modify this tenant\'s entities');
+        }
     }
 
     /**

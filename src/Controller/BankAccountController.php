@@ -4,6 +4,7 @@ namespace App\Controller;
 
 use App\Entity\BankAccount;
 use App\Entity\Business;
+use App\Entity\Tenant;
 use App\Entity\User;
 use App\Repository\BankAccountRepository;
 use App\Repository\BusinessRepository;
@@ -28,6 +29,7 @@ class BankAccountController extends AbstractController
 
     /**
      * Get all bank accounts for a business
+     * Admin tenants can see all bank accounts across all businesses
      */
     #[Route('/api/businesses/{businessId}/bank-accounts', name: 'app_bank_accounts_list', methods: ['GET', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
@@ -54,7 +56,12 @@ class BankAccountController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        $bankAccounts = $this->bankAccountRepository->findByBusiness($business);
+        // Admin tenants can see all bank accounts across all businesses
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            $bankAccounts = $this->bankAccountRepository->findAllOrdered();
+        } else {
+            $bankAccounts = $this->bankAccountRepository->findByBusiness($business);
+        }
 
         $data = array_map(function (BankAccount $bankAccount) {
             return $this->serializeBankAccount($bankAccount);
@@ -65,6 +72,7 @@ class BankAccountController extends AbstractController
 
     /**
      * Get a single bank account by ID
+     * Admin tenants can access any bank account regardless of business
      */
     #[Route('/api/businesses/{businessId}/bank-accounts/{id}', name: 'app_bank_account_get', methods: ['GET', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
@@ -91,7 +99,12 @@ class BankAccountController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        $bankAccount = $this->bankAccountRepository->findByIdAndBusiness($id, $business);
+        // Admin tenants can access any bank account, regular users only bank accounts from their business
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            $bankAccount = $this->bankAccountRepository->find($id);
+        } else {
+            $bankAccount = $this->bankAccountRepository->findByIdAndBusiness($id, $business);
+        }
 
         if (!$bankAccount) {
             return new JsonResponse(
@@ -130,6 +143,9 @@ class BankAccountController extends AbstractController
 
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
+
+        // Check if user can write to this tenant (non-admin users from admin tenants can only write to their own tenant)
+        $this->ensureUserCanWriteToTenant($user, $business->getTenant());
 
         $data = json_decode($request->getContent(), true);
 
@@ -206,7 +222,12 @@ class BankAccountController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        $bankAccount = $this->bankAccountRepository->findByIdAndBusiness($id, $business);
+        // Admin tenants can access any bank account, regular users only bank accounts from their business
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            $bankAccount = $this->bankAccountRepository->find($id);
+        } else {
+            $bankAccount = $this->bankAccountRepository->findByIdAndBusiness($id, $business);
+        }
 
         if (!$bankAccount) {
             return new JsonResponse(
@@ -214,6 +235,9 @@ class BankAccountController extends AbstractController
                 Response::HTTP_NOT_FOUND
             );
         }
+
+        // Check if user can write to this tenant (non-admin users from admin tenants can only write to their own tenant)
+        $this->ensureUserCanWriteToTenant($user, $bankAccount->getBusiness()->getTenant());
 
         $data = json_decode($request->getContent(), true);
 
@@ -293,7 +317,12 @@ class BankAccountController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        $bankAccount = $this->bankAccountRepository->findByIdAndBusiness($id, $business);
+        // Admin tenants can access any bank account, regular users only bank accounts from their business
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            $bankAccount = $this->bankAccountRepository->find($id);
+        } else {
+            $bankAccount = $this->bankAccountRepository->findByIdAndBusiness($id, $business);
+        }
 
         if (!$bankAccount) {
             return new JsonResponse(
@@ -301,6 +330,9 @@ class BankAccountController extends AbstractController
                 Response::HTTP_NOT_FOUND
             );
         }
+
+        // Check if user can write to this tenant (non-admin users from admin tenants can only write to their own tenant)
+        $this->ensureUserCanWriteToTenant($user, $bankAccount->getBusiness()->getTenant());
 
         $this->entityManager->remove($bankAccount);
         $this->entityManager->flush();
@@ -338,6 +370,43 @@ class BankAccountController extends AbstractController
         // Regular users can only access businesses of their tenant
         if ($user->getTenant() !== $business->getTenant()) {
             throw $this->createAccessDeniedException('You do not have access to this business');
+        }
+    }
+
+    /**
+     * Check if user can read all entities (admin tenant)
+     */
+    private function canUserReadAll(User $user): bool
+    {
+        return $user->getTenant() && $user->getTenant()->isAdminTenant();
+    }
+
+    /**
+     * Check if user can write to a specific tenant
+     */
+    private function canUserWriteToTenant(User $user, ?Tenant $targetTenant): bool
+    {
+        if (!$targetTenant) {
+            return false;
+        }
+
+        // Admin users from admin tenants can write to any tenant
+        if ($this->canUserReadAll($user) && in_array('ROLE_ADMIN', $user->getRoles())) {
+            return true;
+        }
+        
+        // Non-admin users from admin tenants can only write to their own tenant
+        // Regular tenants can only write to their own tenant
+        return $user->getTenant() === $targetTenant;
+    }
+
+    /**
+     * Ensure user can write to a specific tenant (throws exception if not)
+     */
+    private function ensureUserCanWriteToTenant(User $user, ?Tenant $targetTenant): void
+    {
+        if (!$this->canUserWriteToTenant($user, $targetTenant)) {
+            throw $this->createAccessDeniedException('You do not have permission to modify this tenant\'s entities');
         }
     }
 

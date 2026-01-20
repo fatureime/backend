@@ -28,6 +28,7 @@ class ArticleController extends AbstractController
 
     /**
      * Get all articles for a business
+     * Admin tenants can see all articles across all businesses
      */
     #[Route('/api/businesses/{businessId}/articles', name: 'app_articles_list', methods: ['GET', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
@@ -54,7 +55,12 @@ class ArticleController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        $articles = $this->articleRepository->findByBusiness($business);
+        // Admin tenants can see all articles across all businesses
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            $articles = $this->articleRepository->findAllOrdered();
+        } else {
+            $articles = $this->articleRepository->findByBusiness($business);
+        }
 
         $data = array_map(function (Article $article) {
             return $this->serializeArticle($article);
@@ -65,6 +71,7 @@ class ArticleController extends AbstractController
 
     /**
      * Get a single article by ID
+     * Admin tenants can access any article regardless of business
      */
     #[Route('/api/businesses/{businessId}/articles/{id}', name: 'app_article_get', methods: ['GET', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
@@ -91,7 +98,12 @@ class ArticleController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        $article = $this->articleRepository->findByIdAndBusiness($id, $business);
+        // Admin tenants can access any article, regular users only articles from their business
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            $article = $this->articleRepository->find($id);
+        } else {
+            $article = $this->articleRepository->findByIdAndBusiness($id, $business);
+        }
 
         if (!$article) {
             return new JsonResponse(
@@ -211,7 +223,12 @@ class ArticleController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        $article = $this->articleRepository->findByIdAndBusiness($id, $business);
+        // Admin tenants can access any article, regular users only articles from their business
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            $article = $this->articleRepository->find($id);
+        } else {
+            $article = $this->articleRepository->findByIdAndBusiness($id, $business);
+        }
 
         if (!$article) {
             return new JsonResponse(
@@ -288,7 +305,12 @@ class ArticleController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        $article = $this->articleRepository->findByIdAndBusiness($id, $business);
+        // Admin tenants can access any article, regular users only articles from their business
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            $article = $this->articleRepository->find($id);
+        } else {
+            $article = $this->articleRepository->findByIdAndBusiness($id, $business);
+        }
 
         if (!$article) {
             return new JsonResponse(

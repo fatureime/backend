@@ -45,4 +45,17 @@ class BankAccountRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * Find all bank accounts ordered by creation date (for admin tenants)
+     *
+     * @return BankAccount[]
+     */
+    public function findAllOrdered(): array
+    {
+        return $this->createQueryBuilder('ba')
+            ->orderBy('ba.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

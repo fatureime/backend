@@ -7,6 +7,7 @@ use App\Entity\Business;
 use App\Entity\Invoice;
 use App\Entity\InvoiceItem;
 use App\Entity\Tax;
+use App\Entity\Tenant;
 use App\Entity\User;
 use App\Repository\ArticleRepository;
 use App\Repository\BusinessRepository;
@@ -83,6 +84,7 @@ class InvoiceController extends AbstractController
 
     /**
      * Get all invoices for a business (as issuer)
+     * Admin tenants can see all invoices across all businesses
      */
     #[Route('/api/businesses/{businessId}/invoices', name: 'app_invoices_list', methods: ['GET', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
@@ -109,7 +111,15 @@ class InvoiceController extends AbstractController
         // Check if user can access this business
         $this->ensureUserCanAccessBusiness($user, $business);
 
-        $invoices = $this->invoiceRepository->findByIssuerBusiness($business);
+        // Admin tenants can see all invoices across all businesses
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            $invoices = $this->invoiceRepository->createQueryBuilder('i')
+                ->orderBy('i.createdAt', 'DESC')
+                ->getQuery()
+                ->getResult();
+        } else {
+            $invoices = $this->invoiceRepository->findByIssuerBusiness($business);
+        }
 
         $data = array_map(function (Invoice $invoice) use ($request) {
             return $this->serializeInvoice($invoice, $request);
@@ -228,6 +238,10 @@ class InvoiceController extends AbstractController
                     Response::HTTP_BAD_REQUEST
                 );
             }
+        } else {
+            // Admin tenant: check if user can write to the issuer business's tenant
+            // Non-admin users from admin tenants can only create invoices for their own tenant
+            $this->ensureUserCanWriteToTenant($user, $issuerBusiness->getTenant());
         }
 
         $data = json_decode($request->getContent(), true);
@@ -380,7 +394,7 @@ class InvoiceController extends AbstractController
         $data = json_decode($request->getContent(), true);
 
         // For normal tenants: ensure invoice issuer is their tenant's issuer business
-        // For admin tenants: can update any invoice
+        // For admin tenants: can update any invoice, but non-admin users can only update their own tenant's invoices
         if (!$user->getTenant() || !$user->getTenant()->isAdminTenant()) {
             $tenantIssuerBusiness = $user->getTenant()->getIssuerBusiness();
             if (!$tenantIssuerBusiness) {
@@ -396,6 +410,10 @@ class InvoiceController extends AbstractController
                     Response::HTTP_FORBIDDEN
                 );
             }
+        } else {
+            // Admin tenant: check if user can write to the invoice's issuer business tenant
+            // Non-admin users from admin tenants can only update their own tenant's invoices
+            $this->ensureUserCanWriteToTenant($user, $invoice->getIssuer()->getTenant());
         }
 
         // Prevent changing issuer for non-admin tenants
@@ -406,7 +424,7 @@ class InvoiceController extends AbstractController
                     Response::HTTP_FORBIDDEN
                 );
             }
-            // Admin tenants can change issuer
+            // Admin tenants can change issuer, but non-admin users can only change to their own tenant's businesses
             $issuerBusiness = $this->businessRepository->find((int) $data['issuer_id']);
             if (!$issuerBusiness) {
                 return new JsonResponse(
@@ -414,6 +432,8 @@ class InvoiceController extends AbstractController
                     Response::HTTP_NOT_FOUND
                 );
             }
+            // Check if user can write to the new issuer business's tenant
+            $this->ensureUserCanWriteToTenant($user, $issuerBusiness->getTenant());
             $invoice->setIssuer($issuerBusiness);
         }
 
@@ -552,6 +572,9 @@ class InvoiceController extends AbstractController
                 );
             }
         }
+
+        // Check if user can write to this tenant (non-admin users from admin tenants can only write to their own tenant)
+        $this->ensureUserCanWriteToTenant($user, $invoice->getIssuer()->getTenant());
 
         $this->entityManager->remove($invoice);
         $this->entityManager->flush();
@@ -827,6 +850,43 @@ class InvoiceController extends AbstractController
         // Regular users can only access businesses of their tenant
         if ($user->getTenant() !== $business->getTenant()) {
             throw $this->createAccessDeniedException('You do not have access to this business');
+        }
+    }
+
+    /**
+     * Check if user can read all entities (admin tenant)
+     */
+    private function canUserReadAll(User $user): bool
+    {
+        return $user->getTenant() && $user->getTenant()->isAdminTenant();
+    }
+
+    /**
+     * Check if user can write to a specific tenant
+     */
+    private function canUserWriteToTenant(User $user, ?Tenant $targetTenant): bool
+    {
+        if (!$targetTenant) {
+            return false;
+        }
+
+        // Admin users from admin tenants can write to any tenant
+        if ($this->canUserReadAll($user) && in_array('ROLE_ADMIN', $user->getRoles())) {
+            return true;
+        }
+        
+        // Non-admin users from admin tenants can only write to their own tenant
+        // Regular tenants can only write to their own tenant
+        return $user->getTenant() === $targetTenant;
+    }
+
+    /**
+     * Ensure user can write to a specific tenant (throws exception if not)
+     */
+    private function ensureUserCanWriteToTenant(User $user, ?Tenant $targetTenant): void
+    {
+        if (!$this->canUserWriteToTenant($user, $targetTenant)) {
+            throw $this->createAccessDeniedException('You do not have permission to modify this tenant\'s entities');
         }
     }
 

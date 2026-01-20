@@ -45,4 +45,17 @@ class ArticleRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    /**
+     * Find all articles ordered by creation date (for admin tenants)
+     *
+     * @return Article[]
+     */
+    public function findAllOrdered(): array
+    {
+        return $this->createQueryBuilder('a')
+            ->orderBy('a.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

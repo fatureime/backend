@@ -113,6 +113,9 @@ class TenantController extends AbstractController
         // Check if user can access this tenant
         $this->ensureUserCanAccessTenant($user, $tenant);
 
+        // Check if user can write to this tenant (non-admin users from admin tenants can only write to their own tenant)
+        $this->ensureUserCanWriteToTenant($user, $tenant);
+
         $data = json_decode($request->getContent(), true);
 
         // Update fields if provided
@@ -125,10 +128,10 @@ class TenantController extends AbstractController
         }
 
         if (isset($data['is_admin'])) {
-            // Only admin tenants can change is_admin status
-            if (!$user->getTenant() || !$user->getTenant()->isAdminTenant()) {
+            // Only admin users from admin tenants can change is_admin status
+            if (!$user->getTenant() || !$user->getTenant()->isAdminTenant() || !in_array('ROLE_ADMIN', $user->getRoles())) {
                 return new JsonResponse(
-                    ['error' => 'Only admin tenants can change admin status'],
+                    ['error' => 'Only admin users from admin tenants can change admin status'],
                     Response::HTTP_FORBIDDEN
                 );
             }
@@ -189,13 +192,16 @@ class TenantController extends AbstractController
         // Check if user can access this tenant
         $this->ensureUserCanAccessTenant($user, $tenant);
 
-        // Only admin tenants can delete tenants
-        if (!$user->getTenant() || !$user->getTenant()->isAdminTenant()) {
+        // Only admin users from admin tenants can delete tenants
+        if (!$user->getTenant() || !$user->getTenant()->isAdminTenant() || !in_array('ROLE_ADMIN', $user->getRoles())) {
             return new JsonResponse(
-                ['error' => 'Only admin tenants can delete tenants'],
+                ['error' => 'Only admin users from admin tenants can delete tenants'],
                 Response::HTTP_FORBIDDEN
             );
         }
+
+        // Check if user can write to this tenant (non-admin users from admin tenants can only write to their own tenant)
+        $this->ensureUserCanWriteToTenant($user, $tenant);
 
         $this->entityManager->remove($tenant);
         $this->entityManager->flush();
@@ -233,6 +239,43 @@ class TenantController extends AbstractController
         // Regular users can only access their own tenant
         if ($user->getTenant() !== $tenant) {
             throw $this->createAccessDeniedException('You do not have access to this tenant');
+        }
+    }
+
+    /**
+     * Check if user can read all entities (admin tenant)
+     */
+    private function canUserReadAll(User $user): bool
+    {
+        return $user->getTenant() && $user->getTenant()->isAdminTenant();
+    }
+
+    /**
+     * Check if user can write to a specific tenant
+     */
+    private function canUserWriteToTenant(User $user, ?Tenant $targetTenant): bool
+    {
+        if (!$targetTenant) {
+            return false;
+        }
+
+        // Admin users from admin tenants can write to any tenant
+        if ($this->canUserReadAll($user) && in_array('ROLE_ADMIN', $user->getRoles())) {
+            return true;
+        }
+        
+        // Non-admin users from admin tenants can only write to their own tenant
+        // Regular tenants can only write to their own tenant
+        return $user->getTenant() === $targetTenant;
+    }
+
+    /**
+     * Ensure user can write to a specific tenant (throws exception if not)
+     */
+    private function ensureUserCanWriteToTenant(User $user, ?Tenant $targetTenant): void
+    {
+        if (!$this->canUserWriteToTenant($user, $targetTenant)) {
+            throw $this->createAccessDeniedException('You do not have permission to modify this tenant\'s entities');
         }
     }
 
