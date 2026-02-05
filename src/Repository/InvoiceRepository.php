@@ -4,6 +4,7 @@ namespace App\Repository;
 
 use App\Entity\Business;
 use App\Entity\Invoice;
+use App\Entity\Tenant;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -56,6 +57,22 @@ class InvoiceRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('i')
             ->andWhere('i.receiver = :business')
             ->setParameter('business', $business)
+            ->orderBy('i.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Find all invoices issued by businesses belonging to a tenant
+     *
+     * @return Invoice[]
+     */
+    public function findByTenant(Tenant $tenant): array
+    {
+        return $this->createQueryBuilder('i')
+            ->join('i.issuer', 'b')
+            ->andWhere('b.tenant = :tenant')
+            ->setParameter('tenant', $tenant)
             ->orderBy('i.createdAt', 'DESC')
             ->getQuery()
             ->getResult();

@@ -46,7 +46,8 @@ class InvoiceController extends AbstractController
 
 
     /**
-     * Get all invoices (admin tenants only)
+     * Get all invoices
+     * Admin tenants can see all invoices, normal tenants can see invoices for their tenant
      */
     #[Route('/api/invoices', name: 'app_invoices_all', methods: ['GET', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
@@ -61,19 +62,23 @@ class InvoiceController extends AbstractController
         
         $this->ensureUserIsActive($user);
 
-        // Only admin tenants can access all invoices
-        if (!$user->getTenant() || !$user->getTenant()->isAdminTenant()) {
-            return new JsonResponse(
-                ['error' => 'Access denied. Only admin tenants can view all invoices.'],
-                Response::HTTP_FORBIDDEN
-            );
+        // Admin tenants can see all invoices, normal tenants see only their tenant's invoices
+        if ($user->getTenant() && $user->getTenant()->isAdminTenant()) {
+            // Get all invoices ordered by creation date (newest first)
+            $invoices = $this->invoiceRepository->createQueryBuilder('i')
+                ->orderBy('i.createdAt', 'DESC')
+                ->getQuery()
+                ->getResult();
+        } else {
+            // Normal tenants see invoices for their tenant
+            if (!$user->getTenant()) {
+                return new JsonResponse(
+                    ['error' => 'User must belong to a tenant'],
+                    Response::HTTP_FORBIDDEN
+                );
+            }
+            $invoices = $this->invoiceRepository->findByTenant($user->getTenant());
         }
-
-        // Get all invoices ordered by creation date (newest first)
-        $invoices = $this->invoiceRepository->createQueryBuilder('i')
-            ->orderBy('i.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
 
         $data = array_map(function (Invoice $invoice) use ($request) {
             return $this->serializeInvoice($invoice, $request);
