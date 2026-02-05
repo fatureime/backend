@@ -5,8 +5,6 @@ namespace App\Service;
 use App\Entity\Invoice;
 use Dompdf\Dompdf;
 use Dompdf\Options;
-use Endroid\QrCode\QrCode;
-use Endroid\QrCode\Writer\PngWriter;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
@@ -37,9 +35,6 @@ class InvoicePdfService
         // Calculate tax total from invoice items
         $taxTotal = $this->calculateTaxTotal($invoice);
 
-        // Generate QR code
-        $qrCodeBase64 = $this->generateQrCode($invoice);
-
         // Convert logos to base64
         $issuerLogo = $this->convertLogoToBase64($invoice->getIssuer()->getLogo());
         $receiverLogo = $this->convertLogoToBase64($invoice->getReceiver()?->getLogo());
@@ -60,7 +55,6 @@ class InvoicePdfService
         $html = $this->twig->render('invoice/pdf.html.twig', [
             'invoice' => $invoice,
             'taxTotal' => $taxTotal,
-            'qrCodeBase64' => $qrCodeBase64,
             'invoiceUrl' => $invoiceUrl,
             'issuerLogo' => $issuerLogo,
             'receiverLogo' => $receiverLogo,
@@ -104,35 +98,6 @@ class InvoicePdfService
         }
         
         return $taxTotal;
-    }
-
-    /**
-     * Generate QR code for invoice URL
-     */
-    private function generateQrCode(Invoice $invoice): ?string
-    {
-        try {
-            $frontendUrl = $this->parameterBag->get('frontend_url');
-            $invoiceUrl = sprintf(
-                '%s/businesses/%d/invoices/%d',
-                rtrim($frontendUrl, '/'),
-                $invoice->getIssuer()->getId(),
-                $invoice->getId()
-            );
-
-            $qrCode = QrCode::create($invoiceUrl)
-                ->setSize(200)
-                ->setMargin(10);
-
-            $writer = new PngWriter();
-            $result = $writer->write($qrCode);
-            
-            return base64_encode($result->getString());
-        } catch (\Exception $e) {
-            // If QR code generation fails, return null
-            // Template will handle missing QR code gracefully
-            return null;
-        }
     }
 
     /**

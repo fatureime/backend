@@ -247,10 +247,6 @@
             vertical-align: middle;
         }
         
-        .qr-wrapper {
-            width: 100px;
-        }
-        
         .totals-card {
             background: #fcfcfc;
             border-radius: 8px;
@@ -332,25 +328,6 @@
         .total-final .total-value {
             font-size: 12px;
             font-weight: 700;
-        }
-        
-        /* QR Code Section */
-        .qr-section {
-            text-align: center;
-        }
-        
-        .qr-section img {
-            width: 70px;
-            height: 70px;
-            display: block;
-            margin: 0 auto 5px;
-            border: 1px solid #ddd;
-        }
-        
-        .qr-section-label {
-            font-size: 9px;
-            color: #666;
-            font-weight: bold;
         }
         
         /* Bank Account Section */
@@ -463,14 +440,6 @@
                             <span class="invoice-date-normal">{{ invoice.dueDate ? invoice.dueDate.format('d.m.Y') : '' }}</span>
                         </div>
                     </td>
-                    {% if qrCodeBase64 %}
-                    <td style="text-align: right; padding-left: 20px;">
-                        <div class="qr-section">
-                            <img src="data:image/png;base64,{{ qrCodeBase64 }}" alt="QR Code" />
-                            <div class="qr-section-label">Skano për të parë online</div>
-                        </div>
-                    </td>
-                    {% endif %}
                 </tr>
             </table>
         </div>
