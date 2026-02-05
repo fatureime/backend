@@ -27,7 +27,7 @@ class InvoiceStatusController extends AbstractController
     }
 
     /**
-     * Get all invoice statuses (all users of admin tenants can view)
+     * Get all invoice statuses (all authenticated users can view)
      */
     #[Route('/api/invoice-statuses', name: 'app_invoice_statuses_list', methods: ['GET', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
@@ -41,7 +41,6 @@ class InvoiceStatusController extends AbstractController
         $user = $this->getUser();
         
         $this->ensureUserIsActive($user);
-        $this->ensureUserIsInAdminTenant($user);
 
         $statuses = $this->invoiceStatusRepository->findAllOrderedByCode();
 
@@ -53,7 +52,7 @@ class InvoiceStatusController extends AbstractController
     }
 
     /**
-     * Get a single invoice status by ID (all users of admin tenants can view)
+     * Get a single invoice status by ID (all authenticated users can view)
      */
     #[Route('/api/invoice-statuses/{id}', name: 'app_invoice_status_get', methods: ['GET', 'OPTIONS'])]
     #[IsGranted('ROLE_USER')]
@@ -67,7 +66,6 @@ class InvoiceStatusController extends AbstractController
         $user = $this->getUser();
         
         $this->ensureUserIsActive($user);
-        $this->ensureUserIsInAdminTenant($user);
 
         $status = $this->invoiceStatusRepository->find($id);
 
